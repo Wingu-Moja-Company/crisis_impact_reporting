@@ -1,0 +1,79 @@
+{
+  "crisis_event_id": "{{crisis_event_id}}",
+  "crisis_nature": "conflict",
+  "core_fields": [
+    "damage_level",
+    "infrastructure_types",
+    "crisis_nature",
+    "requires_debris_clearing",
+    "photo",
+    "location"
+  ],
+  "modular_fields": [
+    {
+      "id": "damage_cause",
+      "type": "single_select",
+      "required": false,
+      "label": {
+        "en": "Apparent cause of damage",
+        "ar": "السبب الظاهر للضرر",
+        "fr": "Cause apparente des dommages",
+        "zh": "明显损坏原因",
+        "ru": "Очевидная причина ущерба",
+        "es": "Causa aparente del daño"
+      },
+      "options": [
+        { "value": "shelling",    "label": { "en": "Shelling / airstrikes",  "ar": "قصف / غارات جوية", "fr": "Obus / frappes aériennes", "zh": "炮击/空袭", "ru": "Обстрел / авиаудары",    "es": "Bombardeo / ataques aéreos" } },
+        { "value": "fire",        "label": { "en": "Fire",                   "ar": "حريق",              "fr": "Incendie",                 "zh": "火灾",       "ru": "Пожар",                  "es": "Incendio" } },
+        { "value": "looting",     "label": { "en": "Looting / vandalism",    "ar": "نهب / تخريب",       "fr": "Pillage / vandalisme",      "zh": "抢劫/破坏",  "ru": "Мародёрство / вандализм","es": "Saqueo / vandalismo" } },
+        { "value": "explosion",   "label": { "en": "Explosion / IED",        "ar": "انفجار / عبوة ناسفة","fr": "Explosion / EEI",          "zh": "爆炸/简易爆炸装置", "ru": "Взрыв / СВУ",   "es": "Explosión / artefacto" } },
+        { "value": "unknown",     "label": { "en": "Unknown",                "ar": "غير معروف",         "fr": "Inconnu",                  "zh": "未知",       "ru": "Неизвестно",             "es": "Desconocido" } }
+      ]
+    },
+    {
+      "id": "area_accessible",
+      "type": "boolean",
+      "required": true,
+      "label": {
+        "en": "Is the area currently accessible to aid workers?",
+        "ar": "هل المنطقة متاحة حالياً لعمال الإغاثة؟",
+        "fr": "La zone est-elle actuellement accessible aux travailleurs humanitaires ?",
+        "zh": "该地区目前是否可供援助人员进入？",
+        "ru": "Доступна ли территория для гуманитарных работников в настоящее время?",
+        "es": "¿Es accesible la zona para trabajadores humanitarios actualmente?"
+      }
+    },
+    {
+      "id": "active_conflict_nearby",
+      "type": "boolean",
+      "required": true,
+      "label": {
+        "en": "Is there active conflict within 1 km of this location?",
+        "ar": "هل يوجد نزاع نشط في نطاق 1 كم من هذا الموقع؟",
+        "fr": "Y a-t-il un conflit actif dans un rayon d'1 km de ce lieu ?",
+        "zh": "该位置1公里范围内是否存在活跃冲突？",
+        "ru": "Есть ли активный конфликт в радиусе 1 км от этого места?",
+        "es": "¿Hay conflicto activo en un radio de 1 km de este lugar?"
+      }
+    },
+    {
+      "id": "civilian_displacement",
+      "type": "single_select",
+      "required": false,
+      "label": {
+        "en": "Estimated civilian displacement from this building",
+        "ar": "التهجير المدني المقدر من هذا المبنى",
+        "fr": "Déplacement civil estimé depuis ce bâtiment",
+        "zh": "该建筑物平民流离失所估计",
+        "ru": "Расчётное перемещение гражданского населения из этого здания",
+        "es": "Desplazamiento civil estimado de este edificio"
+      },
+      "options": [
+        { "value": "none",     "label": { "en": "None",           "ar": "لا أحد",      "fr": "Aucun",       "zh": "无",     "ru": "Нет",        "es": "Ninguno" } },
+        { "value": "few",      "label": { "en": "Few (< 10)",     "ar": "قليل (< 10)", "fr": "Peu (< 10)",  "zh": "少 (<10)","ru": "Мало (< 10)","es": "Pocos (< 10)" } },
+        { "value": "dozens",   "label": { "en": "Dozens (10–50)", "ar": "عشرات (10–50)","fr": "Dizaines (10–50)","zh": "几十人","ru": "Десятки","es": "Decenas (10–50)" } },
+        { "value": "hundreds", "label": { "en": "Hundreds (50+)", "ar": "مئات (50+)",  "fr": "Centaines (50+)","zh": "数百人","ru": "Сотни (50+)","es": "Cientos (50+)" } }
+      ]
+    }
+  ]
+}

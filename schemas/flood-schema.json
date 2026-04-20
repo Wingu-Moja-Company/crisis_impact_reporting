@@ -1,0 +1,87 @@
+{
+  "crisis_event_id": "{{crisis_event_id}}",
+  "crisis_nature": "flood",
+  "core_fields": [
+    "damage_level",
+    "infrastructure_types",
+    "crisis_nature",
+    "requires_debris_clearing",
+    "photo",
+    "location"
+  ],
+  "modular_fields": [
+    {
+      "id": "water_level",
+      "type": "single_select",
+      "required": true,
+      "label": {
+        "en": "Estimated water level at the site",
+        "ar": "مستوى الماء المقدر في الموقع",
+        "fr": "Niveau d'eau estimé sur le site",
+        "zh": "现场估计水位",
+        "ru": "Оценочный уровень воды на объекте",
+        "es": "Nivel de agua estimado en el sitio"
+      },
+      "options": [
+        { "value": "ankle",  "label": { "en": "Ankle deep (< 0.5 m)", "ar": "< 0.5 م", "fr": "< 0,5 m", "zh": "< 0.5 米", "ru": "< 0,5 м", "es": "< 0,5 m" } },
+        { "value": "knee",   "label": { "en": "Knee deep (0.5–1 m)",  "ar": "0.5–1 م", "fr": "0,5–1 m",  "zh": "0.5–1 米", "ru": "0,5–1 м",  "es": "0,5–1 m" } },
+        { "value": "waist",  "label": { "en": "Waist deep (1–2 m)",   "ar": "1–2 م",   "fr": "1–2 m",    "zh": "1–2 米",   "ru": "1–2 м",    "es": "1–2 m" } },
+        { "value": "above",  "label": { "en": "Above head (> 2 m)",   "ar": "> 2 م",   "fr": "> 2 m",    "zh": "> 2 米",   "ru": "> 2 м",    "es": "> 2 m" } },
+        { "value": "receded","label": { "en": "Water has receded",     "ar": "انحسر الماء", "fr": "L'eau s'est retirée", "zh": "水已退去", "ru": "Вода отступила", "es": "El agua ha retrocedido" } }
+      ]
+    },
+    {
+      "id": "electricity_status",
+      "type": "single_select",
+      "required": false,
+      "label": {
+        "en": "Current condition of electricity infrastructure?",
+        "ar": "الحالة الراهنة للبنية التحتية للكهرباء؟",
+        "fr": "État actuel des infrastructures électriques ?",
+        "zh": "电力基础设施的当前状况？",
+        "ru": "Текущее состояние электроснабжения?",
+        "es": "¿Estado actual de la infraestructura eléctrica?"
+      },
+      "options": [
+        { "value": "no_damage",  "label": { "en": "No damage observed",    "ar": "لا يوجد ضرر",   "fr": "Aucun dommage",         "zh": "无损坏",       "ru": "Повреждений нет",     "es": "Sin daños" } },
+        { "value": "minor",      "label": { "en": "Minor damage",           "ar": "ضرر طفيف",      "fr": "Dommages mineurs",       "zh": "轻微损坏",     "ru": "Незначительный ущерб","es": "Daño menor" } },
+        { "value": "moderate",   "label": { "en": "Moderate damage",        "ar": "ضرر معتدل",     "fr": "Dommages modérés",       "zh": "中等损坏",     "ru": "Умеренный ущерб",    "es": "Daño moderado" } },
+        { "value": "severe",     "label": { "en": "Severe damage",          "ar": "ضرر شديد",      "fr": "Dommages graves",        "zh": "严重损坏",     "ru": "Серьёзный ущерб",    "es": "Daño grave" } },
+        { "value": "destroyed",  "label": { "en": "Completely destroyed",   "ar": "مدمّر كلياً",   "fr": "Complètement détruit",   "zh": "完全损毁",     "ru": "Полностью разрушено", "es": "Completamente destruido" } }
+      ]
+    },
+    {
+      "id": "road_passable",
+      "type": "boolean",
+      "required": false,
+      "label": {
+        "en": "Is the nearest road passable?",
+        "ar": "هل الطريق الأقرب صالح للمرور؟",
+        "fr": "La route la plus proche est-elle praticable ?",
+        "zh": "最近的道路是否可通行？",
+        "ru": "Проходима ли ближайшая дорога?",
+        "es": "¿Es transitable la carretera más cercana?"
+      }
+    },
+    {
+      "id": "pressing_needs",
+      "type": "multi_select",
+      "required": false,
+      "label": {
+        "en": "What are the most urgent needs?",
+        "ar": "ما هي الاحتياجات الأكثر إلحاحاً؟",
+        "fr": "Quels sont les besoins les plus urgents ?",
+        "zh": "最迫切的需求是什么？",
+        "ru": "Каковы наиболее неотложные потребности?",
+        "es": "¿Cuáles son las necesidades más urgentes?"
+      },
+      "options": [
+        { "value": "food_water",    "label": { "en": "Food and water",       "ar": "الغذاء والماء",    "fr": "Nourriture et eau",    "zh": "食物和水",    "ru": "Еда и вода",       "es": "Comida y agua" } },
+        { "value": "shelter",       "label": { "en": "Shelter",              "ar": "مأوى",             "fr": "Abri",                 "zh": "庇护所",      "ru": "Жильё",            "es": "Refugio" } },
+        { "value": "medical",       "label": { "en": "Medical assistance",   "ar": "مساعدة طبية",     "fr": "Aide médicale",        "zh": "医疗援助",    "ru": "Медицинская помощь","es": "Asistencia médica" } },
+        { "value": "evacuation",    "label": { "en": "Evacuation",           "ar": "إخلاء",            "fr": "Évacuation",           "zh": "撤离",        "ru": "Эвакуация",        "es": "Evacuación" } },
+        { "value": "search_rescue", "label": { "en": "Search and rescue",    "ar": "بحث وإنقاذ",      "fr": "Recherche et secours",  "zh": "搜救",        "ru": "Поиск и спасение", "es": "Búsqueda y rescate" } }
+      ]
+    }
+  ]
+}
