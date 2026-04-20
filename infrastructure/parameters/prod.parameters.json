@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location":              { "value": "eastus" },
+    "crisisEventId":         { "value": "ke-flood-2026-04" },
+    "country":               { "value": "KE" },
+    "environment":           { "value": "production" },
+    "postgresAdminPassword": { "reference": { "keyVault": { "id": "/subscriptions/__SUB__/resourceGroups/rg-crisis-platform-prod/providers/Microsoft.KeyVault/vaults/__VAULT__" }, "secretName": "POSTGRES-ADMIN-PASSWORD" } }
+  }
+}
