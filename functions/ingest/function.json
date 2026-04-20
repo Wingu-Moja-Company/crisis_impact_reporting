@@ -1,0 +1,25 @@
+{
+  "scriptFile": "__init_func__.py",
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": ["post"],
+      "route": "v1/reports"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    },
+    {
+      "type": "eventGrid",
+      "name": "outputEvent",
+      "topicEndpointUri": "EventGridTopicUriSetting",
+      "topicKeySetting": "EventGridTopicKeySetting",
+      "direction": "out"
+    }
+  ]
+}
