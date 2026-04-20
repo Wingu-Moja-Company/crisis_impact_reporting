@@ -1,0 +1,79 @@
+{
+  "crisis_event_id": "{{crisis_event_id}}",
+  "crisis_nature": "earthquake",
+  "core_fields": [
+    "damage_level",
+    "infrastructure_types",
+    "crisis_nature",
+    "requires_debris_clearing",
+    "photo",
+    "location"
+  ],
+  "modular_fields": [
+    {
+      "id": "structural_failure_type",
+      "type": "multi_select",
+      "required": false,
+      "label": {
+        "en": "Type of structural failure observed",
+        "ar": "نوع الفشل الهيكلي الملاحظ",
+        "fr": "Type de défaillance structurelle observée",
+        "zh": "观察到的结构破坏类型",
+        "ru": "Тип наблюдаемого структурного разрушения",
+        "es": "Tipo de fallo estructural observado"
+      },
+      "options": [
+        { "value": "collapse",        "label": { "en": "Full collapse",           "ar": "انهيار كامل",         "fr": "Effondrement total",      "zh": "完全倒塌",    "ru": "Полное обрушение",     "es": "Colapso total" } },
+        { "value": "partial_collapse","label": { "en": "Partial collapse",        "ar": "انهيار جزئي",         "fr": "Effondrement partiel",    "zh": "部分倒塌",    "ru": "Частичное обрушение",  "es": "Colapso parcial" } },
+        { "value": "cracks",          "label": { "en": "Visible cracks",          "ar": "تشققات مرئية",        "fr": "Fissures visibles",       "zh": "可见裂缝",    "ru": "Видимые трещины",      "es": "Grietas visibles" } },
+        { "value": "foundation",      "label": { "en": "Foundation damage",       "ar": "تلف الأساس",          "fr": "Dommages aux fondations", "zh": "基础损坏",    "ru": "Повреждение фундамента","es": "Daño en cimientos" } },
+        { "value": "lean",            "label": { "en": "Building leaning",        "ar": "انحراف المبنى",        "fr": "Bâtiment penché",         "zh": "建筑倾斜",    "ru": "Наклон здания",        "es": "Edificio inclinado" } }
+      ]
+    },
+    {
+      "id": "people_trapped",
+      "type": "boolean",
+      "required": true,
+      "label": {
+        "en": "Are there people trapped inside?",
+        "ar": "هل يوجد أشخاص محاصرون داخل المبنى؟",
+        "fr": "Y a-t-il des personnes piégées à l'intérieur ?",
+        "zh": "是否有人被困在里面？",
+        "ru": "Есть ли люди, запертые внутри?",
+        "es": "¿Hay personas atrapadas en el interior?"
+      }
+    },
+    {
+      "id": "aftershock_damage",
+      "type": "boolean",
+      "required": false,
+      "label": {
+        "en": "Has aftershock damage been observed since the main event?",
+        "ar": "هل لوحظ ضرر من الهزات الارتدادية منذ الحدث الرئيسي؟",
+        "fr": "Des dommages dus à des répliques ont-ils été observés depuis le séisme principal ?",
+        "zh": "主震发生后是否观察到余震造成的损坏？",
+        "ru": "Наблюдались ли повреждения от афтершоков после главного толчка?",
+        "es": "¿Se han observado daños por réplicas desde el evento principal?"
+      }
+    },
+    {
+      "id": "utility_status",
+      "type": "multi_select",
+      "required": false,
+      "label": {
+        "en": "Which utilities are currently non-functional?",
+        "ar": "أي المرافق غير وظيفية حالياً؟",
+        "fr": "Quels services publics sont actuellement hors service ?",
+        "zh": "目前哪些公用设施无法正常运行？",
+        "ru": "Какие коммунальные службы в настоящее время не работают?",
+        "es": "¿Qué servicios públicos no funcionan actualmente?"
+      },
+      "options": [
+        { "value": "electricity", "label": { "en": "Electricity", "ar": "كهرباء",  "fr": "Électricité", "zh": "电力", "ru": "Электричество", "es": "Electricidad" } },
+        { "value": "water",       "label": { "en": "Water supply","ar": "مياه",    "fr": "Eau",         "zh": "供水", "ru": "Водоснабжение", "es": "Agua potable" } },
+        { "value": "gas",         "label": { "en": "Gas supply",  "ar": "غاز",    "fr": "Gaz",         "zh": "燃气", "ru": "Газоснабжение", "es": "Gas" } },
+        { "value": "telecoms",    "label": { "en": "Telecoms",    "ar": "اتصالات","fr": "Télécoms",    "zh": "电信", "ru": "Телекоммуникации","es": "Telecomunicaciones" } }
+      ]
+    }
+  ]
+}
