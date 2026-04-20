@@ -1,7 +1,5 @@
-# Architecture, docs and examples (added when ready)
+# Architecture (internal planning doc — not for public repo)
 ARCHITECTURE.md
-README.md
-.env.example
 
 # Environment
 .env
