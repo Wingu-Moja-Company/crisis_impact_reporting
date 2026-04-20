@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "نظام الإبلاغ عن أضرار الأزمات",
+      "offline_banner": "أنت غير متصل — سيتم مزامنة التقارير عند الاتصال",
+      "queue_count": "{{count}} تقرير(تقارير) في قائمة الانتظار"
+    },
+    "form": {
+      "photo_prompt": "التقط صورة أو حمّل صورة للضرر",
+      "damage_level": "مستوى الضرر",
+      "damage_minimal": "طفيف — تلف تجميلي فقط، لا يزال وظيفياً",
+      "damage_partial": "جزئي — قابل للإصلاح، يمكن استخدامه بحذر",
+      "damage_complete": "كامل — غير آمن هيكلياً أو مدمّر",
+      "infra_type": "نوع البنية التحتية",
+      "infra_residential": "سكني",
+      "infra_commercial": "تجاري",
+      "infra_government": "حكومي",
+      "infra_utility": "مرافق",
+      "infra_transport": "نقل",
+      "infra_community": "مجتمعي",
+      "infra_public_space": "فضاء عام",
+      "infra_other": "أخرى",
+      "crisis_nature": "طبيعة الأزمة",
+      "debris": "هل توجد حطام يحتاج إلى إزالة؟",
+      "description": "صف الضرر (اختياري)",
+      "submit": "إرسال التقرير",
+      "location_prompt": "تأكيد موقع الضرر",
+      "what3words_placeholder": "مثال: ///filled.count.soap",
+      "submitting": "جارٍ الإرسال…",
+      "other_description_placeholder": "صف نوع البنية التحتية"
+    },
+    "confirmation": {
+      "success": "تم إرسال التقرير — المعرّف: {{report_id}}",
+      "view_map": "عرض على الخريطة",
+      "saved_offline": "تم حفظ التقرير بدون اتصال — سيتم المزامنة عند الاتصال"
+    },
+    "map": {
+      "select_building": "انقر على مبنى لتحديده",
+      "damage_minimal": "ضرر طفيف",
+      "damage_partial": "ضرر جزئي",
+      "damage_complete": "ضرر كامل",
+      "no_reports": "لا توجد تقارير بعد"
+    },
+    "badges": {
+      "first_responder": "أول مستجيب",
+      "area_champion": "بطل المنطقة",
+      "verified_reporter": "مراسل موثّق",
+      "crisis_veteran": "مخضرم الأزمات"
+    },
+    "offline": {
+      "status_queued": "في الانتظار",
+      "status_syncing": "جارٍ المزامنة",
+      "status_synced": "تمت المزامنة",
+      "status_failed": "فشل"
+    }
+  }
+}
