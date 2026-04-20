@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "Système de signalement des dommages de crise",
+      "offline_banner": "Hors ligne — les rapports seront synchronisés à la reconnexion",
+      "queue_count": "{{count}} rapport(s) en attente d'envoi"
+    },
+    "form": {
+      "photo_prompt": "Prenez ou téléchargez une photo des dommages",
+      "damage_level": "Niveau de dommage",
+      "damage_minimal": "Minimal — cosmétique uniquement, encore fonctionnel",
+      "damage_partial": "Partiel — réparable, utilisable avec précaution",
+      "damage_complete": "Complet — structurellement dangereux ou détruit",
+      "infra_type": "Type d'infrastructure",
+      "infra_residential": "Résidentiel",
+      "infra_commercial": "Commercial",
+      "infra_government": "Gouvernement",
+      "infra_utility": "Services publics",
+      "infra_transport": "Transport",
+      "infra_community": "Communauté",
+      "infra_public_space": "Espace public",
+      "infra_other": "Autre",
+      "crisis_nature": "Nature de la crise",
+      "debris": "Y a-t-il des débris à déblayer ?",
+      "description": "Décrivez les dommages (optionnel)",
+      "submit": "Soumettre le rapport",
+      "location_prompt": "Confirmer l'emplacement des dommages",
+      "what3words_placeholder": "ex. ///filled.count.soap",
+      "submitting": "Envoi en cours…",
+      "other_description_placeholder": "Décrivez le type d'infrastructure"
+    },
+    "confirmation": {
+      "success": "Rapport soumis — ID : {{report_id}}",
+      "view_map": "Voir sur la carte",
+      "saved_offline": "Rapport enregistré hors ligne — sera synchronisé à la reconnexion"
+    },
+    "map": {
+      "select_building": "Appuyez sur un bâtiment pour le sélectionner",
+      "damage_minimal": "Dommages minimes",
+      "damage_partial": "Dommages partiels",
+      "damage_complete": "Dommages complets",
+      "no_reports": "Aucun rapport pour l'instant"
+    },
+    "badges": {
+      "first_responder": "Premier intervenant",
+      "area_champion": "Champion de zone",
+      "verified_reporter": "Rapporteur vérifié",
+      "crisis_veteran": "Vétéran de crise"
+    },
+    "offline": {
+      "status_queued": "En attente",
+      "status_syncing": "Synchronisation",
+      "status_synced": "Synchronisé",
+      "status_failed": "Échec"
+    }
+  }
+}
