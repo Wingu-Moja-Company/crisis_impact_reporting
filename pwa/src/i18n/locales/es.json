@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "Sistema de reporte de daños en crisis",
+      "offline_banner": "Sin conexión — los informes se sincronizarán al reconectarse",
+      "queue_count": "{{count}} informe(s) en cola para subir"
+    },
+    "form": {
+      "photo_prompt": "Tome o suba una foto del daño",
+      "damage_level": "Nivel de daño",
+      "damage_minimal": "Mínimo — solo cosmético, aún funcional",
+      "damage_partial": "Parcial — reparable, utilizable con precaución",
+      "damage_complete": "Completo — estructuralmente inseguro o destruido",
+      "infra_type": "Tipo de infraestructura",
+      "infra_residential": "Residencial",
+      "infra_commercial": "Comercial",
+      "infra_government": "Gobierno",
+      "infra_utility": "Servicios públicos",
+      "infra_transport": "Transporte",
+      "infra_community": "Comunidad",
+      "infra_public_space": "Espacio público",
+      "infra_other": "Otro",
+      "crisis_nature": "Naturaleza de la crisis",
+      "debris": "¿Hay escombros que requieran limpieza?",
+      "description": "Describa el daño (opcional)",
+      "submit": "Enviar informe",
+      "location_prompt": "Confirme la ubicación del daño",
+      "what3words_placeholder": "p.ej. ///filled.count.soap",
+      "submitting": "Enviando…",
+      "other_description_placeholder": "Describa el tipo de infraestructura"
+    },
+    "confirmation": {
+      "success": "Informe enviado — ID: {{report_id}}",
+      "view_map": "Ver en el mapa",
+      "saved_offline": "Informe guardado sin conexión — se sincronizará al reconectarse"
+    },
+    "map": {
+      "select_building": "Toque un edificio para seleccionarlo",
+      "damage_minimal": "Daño mínimo",
+      "damage_partial": "Daño parcial",
+      "damage_complete": "Daño completo",
+      "no_reports": "Sin informes aún"
+    },
+    "badges": {
+      "first_responder": "Primer respondedor",
+      "area_champion": "Campeón de área",
+      "verified_reporter": "Reportero verificado",
+      "crisis_veteran": "Veterano de crisis"
+    },
+    "offline": {
+      "status_queued": "En cola",
+      "status_syncing": "Sincronizando",
+      "status_synced": "Sincronizado",
+      "status_failed": "Fallido"
+    }
+  }
+}

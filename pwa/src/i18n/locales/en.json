@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "Crisis Damage Reporter",
+      "offline_banner": "Working offline — reports will sync when connected",
+      "queue_count": "{{count}} report(s) queued for upload"
+    },
+    "form": {
+      "photo_prompt": "Take or upload a photo of the damage",
+      "damage_level": "Level of damage",
+      "damage_minimal": "Minimal — cosmetic damage only, still functional",
+      "damage_partial": "Partial — repairable, usable with caution",
+      "damage_complete": "Complete — structurally unsafe or destroyed",
+      "infra_type": "Type of infrastructure",
+      "infra_residential": "Residential",
+      "infra_commercial": "Commercial",
+      "infra_government": "Government",
+      "infra_utility": "Utility",
+      "infra_transport": "Transport",
+      "infra_community": "Community",
+      "infra_public_space": "Public space",
+      "infra_other": "Other",
+      "crisis_nature": "Nature of the crisis",
+      "debris": "Is there debris requiring clearing?",
+      "description": "Describe the damage (optional)",
+      "submit": "Submit report",
+      "location_prompt": "Confirm the location of the damage",
+      "what3words_placeholder": "e.g. ///filled.count.soap",
+      "submitting": "Submitting…",
+      "other_description_placeholder": "Describe the infrastructure type"
+    },
+    "confirmation": {
+      "success": "Report submitted — ID: {{report_id}}",
+      "view_map": "View on map",
+      "saved_offline": "Report saved offline — will sync when connected"
+    },
+    "map": {
+      "select_building": "Tap a building to select it",
+      "damage_minimal": "Minimal damage",
+      "damage_partial": "Partial damage",
+      "damage_complete": "Complete damage",
+      "no_reports": "No reports yet"
+    },
+    "badges": {
+      "first_responder": "First Responder",
+      "area_champion": "Area Champion",
+      "verified_reporter": "Verified Reporter",
+      "crisis_veteran": "Crisis Veteran"
+    },
+    "offline": {
+      "status_queued": "Queued",
+      "status_syncing": "Syncing",
+      "status_synced": "Synced",
+      "status_failed": "Failed"
+    }
+  }
+}

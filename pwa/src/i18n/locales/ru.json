@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "Система отчётов об ущербе в кризисных ситуациях",
+      "offline_banner": "Оффлайн-режим — отчёты синхронизируются при подключении",
+      "queue_count": "{{count}} отчёт(ов) в очереди на загрузку"
+    },
+    "form": {
+      "photo_prompt": "Сделайте или загрузите фото повреждений",
+      "damage_level": "Уровень повреждения",
+      "damage_minimal": "Минимальный — косметический ущерб, здание функционирует",
+      "damage_partial": "Частичный — поддаётся ремонту, можно использовать с осторожностью",
+      "damage_complete": "Полный — конструктивно опасен или разрушен",
+      "infra_type": "Тип инфраструктуры",
+      "infra_residential": "Жилой",
+      "infra_commercial": "Коммерческий",
+      "infra_government": "Государственный",
+      "infra_utility": "Коммунальный",
+      "infra_transport": "Транспорт",
+      "infra_community": "Общественный",
+      "infra_public_space": "Общественное пространство",
+      "infra_other": "Другое",
+      "crisis_nature": "Характер кризиса",
+      "debris": "Требуется ли расчистка завалов?",
+      "description": "Опишите повреждения (необязательно)",
+      "submit": "Отправить отчёт",
+      "location_prompt": "Подтвердите местоположение повреждений",
+      "what3words_placeholder": "например: ///filled.count.soap",
+      "submitting": "Отправка…",
+      "other_description_placeholder": "Опишите тип инфраструктуры"
+    },
+    "confirmation": {
+      "success": "Отчёт отправлен — ID: {{report_id}}",
+      "view_map": "Посмотреть на карте",
+      "saved_offline": "Отчёт сохранён оффлайн — синхронизируется при подключении"
+    },
+    "map": {
+      "select_building": "Нажмите на здание, чтобы выбрать его",
+      "damage_minimal": "Минимальный ущерб",
+      "damage_partial": "Частичный ущерб",
+      "damage_complete": "Полный ущерб",
+      "no_reports": "Отчётов пока нет"
+    },
+    "badges": {
+      "first_responder": "Первый респондент",
+      "area_champion": "Чемпион района",
+      "verified_reporter": "Проверенный репортёр",
+      "crisis_veteran": "Ветеран кризисов"
+    },
+    "offline": {
+      "status_queued": "В очереди",
+      "status_syncing": "Синхронизация",
+      "status_synced": "Синхронизировано",
+      "status_failed": "Ошибка"
+    }
+  }
+}

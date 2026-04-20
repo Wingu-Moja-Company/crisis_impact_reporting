@@ -1,0 +1,57 @@
+{
+  "translation": {
+    "app": {
+      "title": "危机损害报告系统",
+      "offline_banner": "离线模式 — 连接恢复后将自动同步报告",
+      "queue_count": "{{count}} 份报告等待上传"
+    },
+    "form": {
+      "photo_prompt": "拍摄或上传受损照片",
+      "damage_level": "损坏程度",
+      "damage_minimal": "轻微 — 仅外观损坏，仍可使用",
+      "damage_partial": "部分 — 可修复，谨慎使用",
+      "damage_complete": "完全 — 结构不安全或已损毁",
+      "infra_type": "基础设施类型",
+      "infra_residential": "住宅",
+      "infra_commercial": "商业",
+      "infra_government": "政府",
+      "infra_utility": "公用设施",
+      "infra_transport": "交通",
+      "infra_community": "社区",
+      "infra_public_space": "公共空间",
+      "infra_other": "其他",
+      "crisis_nature": "危机性质",
+      "debris": "是否有需要清理的废墟？",
+      "description": "描述损坏情况（可选）",
+      "submit": "提交报告",
+      "location_prompt": "确认受损位置",
+      "what3words_placeholder": "例如：///filled.count.soap",
+      "submitting": "提交中…",
+      "other_description_placeholder": "描述基础设施类型"
+    },
+    "confirmation": {
+      "success": "报告已提交 — 编号：{{report_id}}",
+      "view_map": "在地图上查看",
+      "saved_offline": "报告已离线保存 — 连接恢复后将同步"
+    },
+    "map": {
+      "select_building": "点击建筑物以选择",
+      "damage_minimal": "轻微损坏",
+      "damage_partial": "部分损坏",
+      "damage_complete": "完全损坏",
+      "no_reports": "暂无报告"
+    },
+    "badges": {
+      "first_responder": "首位响应者",
+      "area_champion": "区域冠军",
+      "verified_reporter": "认证报告员",
+      "crisis_veteran": "危机老兵"
+    },
+    "offline": {
+      "status_queued": "排队中",
+      "status_syncing": "同步中",
+      "status_synced": "已同步",
+      "status_failed": "失败"
+    }
+  }
+}
