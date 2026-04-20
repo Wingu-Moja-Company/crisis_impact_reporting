@@ -1,0 +1,85 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install bot dependencies
+        run: pip install -r bot/requirements.txt
+
+      - name: Install functions dependencies
+        run: pip install -r functions/requirements.txt
+
+      - name: Install scripts dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run Python tests
+        run: pytest bot/tests/ -v --tb=short
+
+  pwa-checks:
+    name: PWA lint + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: pwa/package.json
+
+      - run: npm install
+        working-directory: pwa
+
+      - run: npm test
+        working-directory: pwa
+
+      - run: npm run build
+        working-directory: pwa
+
+  dashboard-checks:
+    name: Dashboard lint + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package.json
+
+      - run: npm install
+        working-directory: dashboard
+
+      - run: npm test
+        working-directory: dashboard
+
+      - run: npm run build
+        working-directory: dashboard
+
+  bicep-lint:
+    name: Bicep lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Azure CLI + Bicep
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az bicep install
+
+      - name: Lint Bicep templates
+        run: az bicep lint --file infrastructure/main.bicep

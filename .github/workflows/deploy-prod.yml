@@ -1,0 +1,153 @@
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # Required for OIDC login to Azure
+  contents: read
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Azure infrastructure (Bicep)
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      botFunctionAppName:      ${{ steps.bicep.outputs.botFunctionAppName }}
+      pipelineFunctionAppName: ${{ steps.bicep.outputs.pipelineFunctionAppName }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep
+        id: bicep
+        uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: rg-crisis-platform-prod
+          template: infrastructure/main.bicep
+          parameters: infrastructure/parameters/prod.parameters.json
+          failOnStdErr: false
+
+  deploy-functions:
+    name: Deploy Azure Functions
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy bot function app
+        uses: azure/functions-action@v1
+        with:
+          app-name:    ${{ needs.deploy-infrastructure.outputs.botFunctionAppName }}
+          package:     bot
+          scm-do-build-during-deployment: true
+
+      - name: Deploy pipeline function app
+        uses: azure/functions-action@v1
+        with:
+          app-name:    ${{ needs.deploy-infrastructure.outputs.pipelineFunctionAppName }}
+          package:     functions
+          scm-do-build-during-deployment: true
+
+  deploy-pwa:
+    name: Deploy PWA to Azure Static Web Apps
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: pwa/package.json
+
+      - run: npm install
+        working-directory: pwa
+
+      - run: npm run build
+        working-directory: pwa
+        env:
+          VITE_API_BASE_URL:    ${{ secrets.API_BASE_URL }}
+          VITE_CRISIS_EVENT_ID: ${{ secrets.CRISIS_EVENT_ID }}
+
+      - name: Deploy PWA
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN_PWA }}
+          repo_token:                      ${{ secrets.GITHUB_TOKEN }}
+          action:                          upload
+          app_location:                    pwa/dist
+          skip_app_build:                  true
+
+  deploy-dashboard:
+    name: Deploy Dashboard to Azure Static Web Apps
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package.json
+
+      - run: npm install
+        working-directory: dashboard
+
+      - run: npm run build
+        working-directory: dashboard
+        env:
+          VITE_API_BASE_URL:    ${{ secrets.API_BASE_URL }}
+          VITE_WS_URL:          ${{ secrets.WS_URL }}
+          VITE_CRISIS_EVENT_ID: ${{ secrets.CRISIS_EVENT_ID }}
+
+      - name: Deploy Dashboard
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN_DASHBOARD }}
+          repo_token:                      ${{ secrets.GITHUB_TOKEN }}
+          action:                          upload
+          app_location:                    dashboard/dist
+          skip_app_build:                  true
+
+  smoke-test:
+    name: Post-deploy smoke test
+    needs: [deploy-functions, deploy-pwa, deploy-dashboard]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests
+
+      - name: Run smoke tests
+        run: python tests/e2e/smoke_test.py --env prod --crisis-id ${{ secrets.CRISIS_EVENT_ID }}
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
