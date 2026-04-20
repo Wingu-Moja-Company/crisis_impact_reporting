@@ -1,0 +1,61 @@
+# Architecture, docs and examples (added when ready)
+ARCHITECTURE.md
+README.md
+.env.example
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Data files (large binary / downloaded datasets)
+data/footprints/
+*.geojson.gz
+*.parquet
+
+# Azure Functions local runtime
+local.settings.json
+bin/
+obj/
+
+# Azure CLI
+.azure/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+.coverage
+htmlcov/
+coverage.xml
