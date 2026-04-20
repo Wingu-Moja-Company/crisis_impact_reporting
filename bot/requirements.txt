@@ -1,0 +1,4 @@
+python-telegram-bot>=21.0
+azure-functions>=1.18
+azure-keyvault-secrets>=4.7
+azure-identity>=1.15
