@@ -121,4 +121,5 @@ jobs:
       - name: Run smoke tests
         run: python tests/e2e/smoke_test.py --env prod --crisis-id ${{ secrets.CRISIS_EVENT_ID }}
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_BASE_URL:    ${{ secrets.API_BASE_URL }}
+          EXPORT_API_KEY:  ${{ secrets.EXPORT_API_KEY }}

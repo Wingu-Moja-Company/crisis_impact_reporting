@@ -27,9 +27,17 @@ def check(name: str, condition: bool, detail: str = "") -> None:
         _failures.append(name)
 
 
+_EXPORT_API_KEY = os.environ.get("EXPORT_API_KEY", "")
+
+
+def _api_headers() -> dict:
+    return {"X-API-Key": _EXPORT_API_KEY} if _EXPORT_API_KEY else {}
+
+
 def get(url: str, timeout: int = 10) -> tuple[int, dict | str]:
+    req = urllib.request.Request(url, headers=_api_headers())
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read().decode()
             try:
                 return resp.status, json.loads(body)
