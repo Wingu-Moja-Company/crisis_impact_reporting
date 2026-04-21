@@ -35,7 +35,7 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
         <li
           key={r.report_id}
           className={`feed-item${r.report_id === selectedReportId ? " feed-item--selected" : ""}`}
-          style={{ borderLeft: `4px solid ${DAMAGE_COLORS[r.damage_level] ?? "#888"}` }}
+          style={{ borderLeft: `${r.report_id === selectedReportId ? "7px" : "4px"} solid ${DAMAGE_COLORS[r.damage_level] ?? "#888"}` }}
           onClick={() => onSelect(r.report_id)}
         >
           <div className="feed-row">

@@ -156,7 +156,6 @@ body {
 
 .feed-item--selected {
   background: #fffbeb;
-  box-shadow: inset 3px 0 0 #BA7517;
 }
 
 .feed-level {
