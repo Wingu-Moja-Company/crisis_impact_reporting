@@ -239,7 +239,7 @@ def process_report(
     # Step 15 — return response payload
     return {
         "report_id": report_id,
-        "map_url": f"https://dashboard.crisisplatform.io/map?report={report_id}",
+        "map_url": f"{os.environ.get('DASHBOARD_URL', 'https://salmon-desert-0b66f1503.7.azurestaticapps.net')}?report={report_id}",
     }
 
 

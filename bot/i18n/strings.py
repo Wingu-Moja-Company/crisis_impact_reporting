@@ -87,6 +87,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "ru": "🏅 Получена новая награда: {badge_name}",
         "es": "🏅 ¡Nueva insignia obtenida: {badge_name}!",
     },
+    "confirm_no_url": {
+        "en": "✅ Report submitted! ID: {report_id}",
+        "ar": "✅ تم إرسال التقرير! المعرّف: {report_id}",
+        "fr": "✅ Rapport soumis ! ID : {report_id}",
+        "zh": "✅ 报告已提交！编号：{report_id}",
+        "ru": "✅ Отчёт отправлен! ID: {report_id}",
+        "es": "✅ ¡Informe enviado! ID: {report_id}",
+    },
     "error_generic": {
         "en": "Something went wrong. Please try again with /start.",
         "ar": "حدث خطأ ما. يرجى المحاولة مجددًا باستخدام /start.",

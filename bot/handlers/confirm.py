@@ -8,7 +8,9 @@ from telegram.ext import ContextTypes
 from i18n.strings import t
 
 
-API_BASE = os.environ.get("API_BASE_URL", "http://localhost:7071/api")
+def _api_base() -> str:
+    """Read at call time so env var changes after import are picked up."""
+    return os.environ.get("API_BASE_URL", "http://localhost:7071/api")
 
 
 async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -45,11 +47,12 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         result = _post_report(payload, photo_bytes, str(query.from_user.id))
     except Exception as exc:
         await query.edit_message_text(t("error_generic", lang))
-        raise
+        return  # don't re-raise — keeps the function returning 200 to Telegram
 
-    report_id = result["report_id"]
-    map_url = result["map_url"]
-    await query.edit_message_text(t("confirm", lang, report_id=report_id, map_url=map_url))
+    report_id = result.get("report_id", "unknown")
+    map_url = result.get("map_url", "")
+    msg = t("confirm", lang, report_id=report_id, map_url=map_url) if map_url else t("confirm_no_url", lang, report_id=report_id)
+    await query.edit_message_text(msg)
 
     # Notify of any badges earned (returned separately by the API in prod)
     for badge in result.get("badges_awarded", []):
@@ -89,7 +92,7 @@ def _post_report(fields: dict, photo_bytes: bytes | None, submitter_id: str) -> 
         body += f"--{boundary}--\r\n".encode()
 
     req = urllib.request.Request(
-        f"{API_BASE}/v1/reports",
+        f"{_api_base()}/v1/reports",
         data=body,
         headers={
             "Content-Type": f"multipart/form-data; boundary={boundary}",
