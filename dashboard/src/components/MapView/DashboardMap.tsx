@@ -33,21 +33,75 @@ function markerRadius(level: string, selected: boolean) {
   return selected ? base + 5 : base;
 }
 
+const GRADE_LABEL: Record<string, string> = {
+  minimal:  "Grade 1 — Cosmetic damage",
+  partial:  "Grade 2 — Repairable",
+  complete: "Grade 3 — Structurally unsafe",
+};
+
+const CHANNEL_ICON: Record<string, string> = {
+  telegram: "📱", pwa: "🌐", sms: "💬", api: "🔌",
+};
+
+function esc(s: string | null | undefined): string {
+  return (s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function timeAgoPopup(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60)    return `${diff}s ago`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 function reportPopup(r: LiveReport): string {
-  const infra = r.infrastructure_types?.join(", ") || "—";
-  const desc  = r.description_en ? `<p class="popup-desc">${r.description_en}</p>` : "";
-  const time  = r.submitted_at
-    ? new Date(r.submitted_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })
-    : "—";
+  const grade    = GRADE_LABEL[r.damage_level] ?? r.damage_level.toUpperCase();
+  const timeStr  = r.submitted_at ? timeAgoPopup(r.submitted_at) : "—";
+  const infra    = r.infrastructure_types?.length ? r.infrastructure_types.map(esc).join(", ") : "—";
+  const nature   = esc(r.crisis_nature) || "—";
+  const chanIcon = CHANNEL_ICON[r.channel] ?? "📡";
+  const tier     = r.submitter_tier === "verified" ? "✓ Verified" : "👤 Public";
+  const aiPct    = r.ai_vision_confidence != null ? Math.round(r.ai_vision_confidence * 100) : null;
+
+  const photoHtml = r.photo_url ? `
+    <div class="pp-media">
+      <img src="${esc(r.photo_url)}" alt="Damage photo" class="pp-photo"
+           onerror="this.parentElement.style.display='none'">
+      ${aiPct != null ? `<span class="pp-ai">AI ${aiPct}%</span>` : ""}
+    </div>` : (aiPct != null ? `<div class="pp-ai-only">AI confidence: ${aiPct}%</div>` : "");
+
+  const debrisHtml = r.requires_debris_clearing
+    ? `<div class="pp-debris">⚠️ Debris clearing required</div>` : "";
+
+  const locationHtml = (() => {
+    if (r.what3words) return `<div class="pp-row">📍 ///${esc(r.what3words)}</div>`;
+    if (r.location_description) return `<div class="pp-row">📍 ${esc(r.location_description)}</div>`;
+    if (r.building_footprint_matched) return `<div class="pp-row">📍 Building footprint matched</div>`;
+    return "";
+  })();
+
+  const descHtml = r.description_en
+    ? `<div class="pp-desc">${esc(r.description_en)}</div>` : "";
+
   return `
     <div class="report-popup">
-      <span class="popup-badge popup-badge--${r.damage_level}">${r.damage_level.toUpperCase()}</span>
-      <div class="popup-meta">
-        <span>🏗 ${infra}</span>
-        <span>📡 ${r.channel}</span>
-        <span>🕐 ${time}</span>
+      <div class="pp-header pp-header--${r.damage_level}">
+        <span class="pp-grade">${esc(grade)}</span>
+        <span class="pp-time">${timeStr}</span>
       </div>
-      ${desc}
+      ${photoHtml}
+      ${debrisHtml}
+      <div class="pp-details">
+        <div class="pp-row">🏗 ${infra}</div>
+        <div class="pp-row">🌊 ${nature}</div>
+        <div class="pp-row">${chanIcon} ${esc(r.channel)} · ${tier}</div>
+        ${locationHtml}
+      </div>
+      ${descHtml}
+      <div class="pp-id">${esc(r.report_id)}</div>
     </div>
   `;
 }
@@ -180,15 +234,42 @@ export function DashboardMap({
   return (
     <>
       <style>{`
-        .report-popup { font-size: 13px; line-height: 1.5; min-width: 180px; }
-        .popup-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
-          font-weight: 700; font-size: 11px; color: #fff; margin-bottom: 6px; }
-        .popup-badge--minimal  { background: #639922; }
-        .popup-badge--partial  { background: #BA7517; }
-        .popup-badge--complete { background: #E24B4A; }
-        .popup-badge--unknown  { background: #888780; }
-        .popup-meta { display: flex; flex-direction: column; gap: 2px; color: #444; font-size: 12px; }
-        .popup-desc { margin-top: 6px; color: #333; border-top: 1px solid #eee; padding-top: 6px; }
+        .report-popup { font-size: 13px; line-height: 1.5; min-width: 220px; max-width: 280px; }
+
+        /* Colour header strip */
+        .pp-header { display: flex; justify-content: space-between; align-items: center;
+          padding: 6px 10px; border-radius: 4px 4px 0 0; margin: -4px -4px 8px -4px; }
+        .pp-header--minimal  { background: #639922; color: #fff; }
+        .pp-header--partial  { background: #BA7517; color: #fff; }
+        .pp-header--complete { background: #E24B4A; color: #fff; }
+        .pp-header--unknown  { background: #888780; color: #fff; }
+        .pp-grade { font-weight: 700; font-size: 12px; }
+        .pp-time  { font-size: 11px; opacity: .85; }
+
+        /* Photo thumbnail */
+        .pp-media { position: relative; margin-bottom: 8px; }
+        .pp-photo { width: 100%; height: 120px; object-fit: cover; border-radius: 4px;
+          display: block; background: #eee; }
+        .pp-ai { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,.65);
+          color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+        .pp-ai-only { font-size: 11px; color: #666; margin-bottom: 6px; }
+
+        /* Debris alert */
+        .pp-debris { background: #fff3cd; border: 1px solid #f59e0b; border-radius: 4px;
+          padding: 4px 8px; font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 8px; }
+
+        /* Detail rows */
+        .pp-details { display: flex; flex-direction: column; gap: 3px;
+          color: #444; font-size: 12px; margin-bottom: 6px; }
+        .pp-row { display: flex; align-items: flex-start; gap: 4px; text-transform: capitalize; }
+
+        /* Description */
+        .pp-desc { font-size: 12px; color: #333; border-top: 1px solid #eee;
+          padding-top: 6px; margin-top: 4px; font-style: italic; }
+
+        /* Report ID */
+        .pp-id { font-family: monospace; font-size: 10px; color: #aaa;
+          border-top: 1px solid #f0f0f0; margin-top: 6px; padding-top: 4px; }
       `}</style>
       <div ref={containerRef} className="dashboard-map" style={{ height: "100%", width: "100%" }} />
     </>

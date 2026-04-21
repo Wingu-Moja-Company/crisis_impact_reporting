@@ -9,9 +9,17 @@ export interface LiveReport {
   submitted_at: string;
   damage_level: string;
   infrastructure_types: string[];
+  infrastructure_name: string | null;
   crisis_nature: string;
   channel: string;
   description_en: string | null;
+  requires_debris_clearing: boolean;
+  ai_vision_confidence: number | null;
+  what3words: string | null;
+  location_description: string | null;
+  building_footprint_matched: boolean;
+  submitter_tier: "verified" | "public" | string;
+  photo_url: string | null;
   coordinates: [number, number] | null; // [lon, lat]
 }
 
@@ -20,15 +28,23 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
   const p = f.properties as Record<string, unknown>;
   const geom = f.geometry as GeoJSON.Point | null;
   return {
-    report_id:           String(p.report_id ?? ""),
-    building_id:         (p.building_id as string) ?? null,
-    submitted_at:        String(p.submitted_at ?? ""),
-    damage_level:        String(p.damage_level ?? "unknown"),
-    infrastructure_types: (p.infrastructure_types as string[]) ?? [],
-    crisis_nature:       String(p.crisis_nature ?? ""),
-    channel:             String(p.channel ?? ""),
-    description_en:      (p.description_en as string) ?? null,
-    coordinates:         geom?.coordinates ? [geom.coordinates[0], geom.coordinates[1]] : null,
+    report_id:                String(p.report_id ?? ""),
+    building_id:              (p.building_id as string) ?? null,
+    submitted_at:             String(p.submitted_at ?? ""),
+    damage_level:             String(p.damage_level ?? "unknown"),
+    infrastructure_types:     (p.infrastructure_types as string[]) ?? [],
+    infrastructure_name:      (p.infrastructure_name as string) ?? null,
+    crisis_nature:            String(p.crisis_nature ?? ""),
+    channel:                  String(p.channel ?? ""),
+    description_en:           (p.description_en as string) ?? null,
+    requires_debris_clearing: Boolean(p.requires_debris_clearing),
+    ai_vision_confidence:     (p.ai_vision_confidence as number) ?? null,
+    what3words:               (p.what3words as string) ?? null,
+    location_description:     (p.location_description as string) ?? null,
+    building_footprint_matched: Boolean(p.building_footprint_matched),
+    submitter_tier:           String(p.submitter_tier ?? "public"),
+    photo_url:                (p.photo_url as string) ?? null,
+    coordinates:              geom?.coordinates ? [geom.coordinates[0], geom.coordinates[1]] : null,
   };
 }
 

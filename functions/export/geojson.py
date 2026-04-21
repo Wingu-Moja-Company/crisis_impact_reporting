@@ -4,9 +4,11 @@ Directly ingestible by OCHA HDX, QGIS, ArcGIS, and the UNDP RAPIDA toolchain.
 """
 
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from azure.cosmos import CosmosClient
+from azure.storage.blob import BlobSasPermissions, generate_blob_sas
 
 
 def _container(name: str):
@@ -14,25 +16,61 @@ def _container(name: str):
     return client.get_database_client(os.environ["COSMOS_DATABASE"]).get_container_client(name)
 
 
+def _photo_url(blob_path: str | None) -> str | None:
+    """Generate a 2-hour SAS URL for a photo blob. Returns None on any failure."""
+    if not blob_path:
+        return None
+    try:
+        conn_str = os.environ.get("STORAGE_CONNECTION_STRING", "")
+        parts = dict(seg.split("=", 1) for seg in conn_str.split(";") if "=" in seg)
+        account_name = parts.get("AccountName", "")
+        account_key = parts.get("AccountKey", "")
+        if not account_name or not account_key:
+            return None
+        sas = generate_blob_sas(
+            account_name=account_name,
+            container_name="report-photos",
+            blob_name=blob_path,
+            account_key=account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.now(timezone.utc) + timedelta(hours=2),
+        )
+        return f"https://{account_name}.blob.core.windows.net/report-photos/{blob_path}?{sas}"
+    except Exception:
+        return None
+
+
 def build_feature(doc: dict) -> dict | None:
     coords = doc.get("location", {}).get("coordinates")
     if not coords:
         return None
+    blob_path = doc.get("media", {}).get("photo_blob_path")
     return {
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": coords},
         "properties": {
-            "report_id":              doc["id"],
-            "crisis_event_id":        doc["crisis_event_id"],
-            "building_id":            doc.get("building_id"),
-            "submitted_at":           doc["submitted_at"],
-            "channel":                doc["channel"],
-            "damage_level":           doc["damage"]["level"],
-            "infrastructure_types":   doc["damage"]["infrastructure_types"],
-            "crisis_nature":          doc["damage"]["crisis_nature"],
+            # Core identifiers
+            "report_id":                doc["id"],
+            "crisis_event_id":          doc["crisis_event_id"],
+            "building_id":              doc.get("building_id"),
+            "submitted_at":             doc["submitted_at"],
+            "channel":                  doc["channel"],
+            # Damage assessment (RAPIDA / OCHA HDX standard fields)
+            "damage_level":             doc["damage"]["level"],
+            "infrastructure_types":     doc["damage"]["infrastructure_types"],
+            "infrastructure_name":      doc["damage"].get("infrastructure_name"),
+            "crisis_nature":            doc["damage"]["crisis_nature"],
             "requires_debris_clearing": doc["damage"]["requires_debris_clearing"],
-            "description_en":         doc["damage"].get("description_en"),
-            "ai_vision_confidence":   doc["damage"].get("ai_vision_confidence"),
+            "description_en":           doc["damage"].get("description_en"),
+            "ai_vision_confidence":     doc["damage"].get("ai_vision_confidence"),
+            # Location detail
+            "what3words":               doc.get("location", {}).get("what3words"),
+            "location_description":     doc.get("location", {}).get("location_description"),
+            "building_footprint_matched": doc.get("location", {}).get("building_footprint_matched", False),
+            # Reporter trust
+            "submitter_tier":           doc.get("meta", {}).get("submitter_tier", "public"),
+            # Photo evidence — short-lived SAS URL (valid 2 h)
+            "photo_url":                _photo_url(blob_path),
         },
     }
 
