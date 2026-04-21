@@ -81,7 +81,9 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
                 {/* Location hint */}
                 {(r.what3words || r.location_description) && (
                   <div className="feed-location">
-                    📍 {r.what3words ? `///${r.what3words}` : r.location_description}
+                    📍 {r.what3words
+                      ? r.what3words.replace(/^\/+/, "")   // strip any leading slashes
+                      : r.location_description}
                   </div>
                 )}
 

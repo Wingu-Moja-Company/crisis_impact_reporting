@@ -26,12 +26,46 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "Foto recibida. Ahora seleccione la ubicación del daño.",
     },
     "send_location": {
-        "en": "Share your location or type a what3words address (e.g. ///filled.count.soap).",
-        "ar": "شارك موقعك أو اكتب عنوان what3words (مثال: ///filled.count.soap).",
-        "fr": "Partagez votre position ou saisissez une adresse what3words (ex. ///filled.count.soap).",
-        "zh": "分享您的位置，或输入 what3words 地址（例如：///filled.count.soap）。",
-        "ru": "Поделитесь геолокацией или введите адрес what3words (например: ///filled.count.soap).",
-        "es": "Comparta su ubicación o escriba una dirección what3words (p.ej. ///filled.count.soap).",
+        "en": (
+            "📍 Where is the damage?\n\n"
+            "Best: tap the 📎 attachment button → Location to share your GPS.\n\n"
+            "Or type a street address, landmark, or neighbourhood "
+            "(e.g. \"Near Mathare Market\").\n\n"
+            "Have a 3-word location code? Type it like: filled.count.soap"
+        ),
+        "ar": (
+            "📍 أين الضرر؟\n\n"
+            "الأفضل: اضغط على زر المرفقات 📎 ← الموقع لمشاركة نظام تحديد المواقع.\n\n"
+            "أو اكتب عنوانًا أو معلمًا أو حيًا (مثال: \"بالقرب من سوق ماثاري\").\n\n"
+            "هل لديك رمز موقع من ثلاث كلمات؟ اكتبه هكذا: filled.count.soap"
+        ),
+        "fr": (
+            "📍 Où se trouvent les dégâts ?\n\n"
+            "Idéal : appuyez sur 📎 Pièce jointe → Localisation pour partager votre GPS.\n\n"
+            "Ou tapez une adresse, un lieu repère ou un quartier "
+            "(ex. « Près du marché de Mathare »).\n\n"
+            "Vous avez un code à 3 mots ? Tapez-le ainsi : filled.count.soap"
+        ),
+        "zh": (
+            "📍 损坏在哪里？\n\n"
+            "最佳方式：点击 📎 附件按钮 → 位置，分享您的 GPS 位置。\n\n"
+            "或输入街道地址、地标或社区名称（例如："马萨雷市场附近"）。\n\n"
+            "有三词定位码？请这样输入：filled.count.soap"
+        ),
+        "ru": (
+            "📍 Где находится ущерб?\n\n"
+            "Лучший способ: нажмите 📎 Вложения → Геолокация, чтобы поделиться GPS.\n\n"
+            "Или введите адрес, ориентир или район "
+            "(например: «Рядом с рынком Матаре»).\n\n"
+            "Есть код из трёх слов? Введите его так: filled.count.soap"
+        ),
+        "es": (
+            "📍 ¿Dónde están los daños?\n\n"
+            "Lo mejor: toque el botón 📎 adjuntar → Ubicación para compartir su GPS.\n\n"
+            "O escriba una dirección, punto de referencia o barrio "
+            "(ej. \"Cerca del Mercado Mathare\").\n\n"
+            "¿Tiene un código de 3 palabras? Escríbalo así: filled.count.soap"
+        ),
     },
     "select_damage_level": {
         "en": "Select the level of damage:",

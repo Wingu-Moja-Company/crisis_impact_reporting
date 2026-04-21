@@ -77,9 +77,12 @@ function reportPopup(r: LiveReport): string {
     ? `<div class="pp-debris">⚠️ Debris clearing required</div>` : "";
 
   const locationHtml = (() => {
-    if (r.what3words) return `<div class="pp-row">📍 ///${esc(r.what3words)}</div>`;
+    if (r.what3words) {
+      const words = r.what3words.replace(/^\/+/, ""); // strip any leading slashes
+      return `<div class="pp-row">📍 3-word code: ${esc(words)}</div>`;
+    }
     if (r.location_description) return `<div class="pp-row">📍 ${esc(r.location_description)}</div>`;
-    if (r.building_footprint_matched) return `<div class="pp-row">📍 Building footprint matched</div>`;
+    if (r.building_footprint_matched) return `<div class="pp-row">📍 Building GPS matched</div>`;
     return "";
   })();
 
