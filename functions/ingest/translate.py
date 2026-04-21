@@ -23,20 +23,24 @@ def detect_and_translate(text: str) -> tuple[str, str]:
     }
     body = json.dumps([{"text": text}]).encode()
 
-    # Detect language first
-    detect_url = f"{TRANSLATOR_ENDPOINT}/detect?api-version=3.0"
-    req = urllib.request.Request(detect_url, data=body, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        detected = json.loads(resp.read())[0]["language"]
+    try:
+        # Detect language first
+        detect_url = f"{TRANSLATOR_ENDPOINT}/detect?api-version=3.0"
+        req = urllib.request.Request(detect_url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            detected = json.loads(resp.read())[0]["language"]
 
-    if detected == "en":
-        return "en", text
+        if detected == "en":
+            return "en", text
 
-    # Translate to English
-    translate_url = f"{TRANSLATOR_ENDPOINT}/translate?api-version=3.0&to=en"
-    req = urllib.request.Request(translate_url, data=body, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        result = json.loads(resp.read())
+        # Translate to English
+        translate_url = f"{TRANSLATOR_ENDPOINT}/translate?api-version=3.0&to=en"
+        req = urllib.request.Request(translate_url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read())
 
-    translation = result[0]["translations"][0]["text"]
-    return detected, translation
+        translation = result[0]["translations"][0]["text"]
+        return detected, translation
+    except Exception:
+        # Translation is non-critical — return original text rather than failing the pipeline
+        return "und", text

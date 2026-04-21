@@ -94,7 +94,7 @@ def run(api_base: str, crisis_event_id: str) -> None:
 
     # 5. CAP feed
     print("\nCAP feed")
-    status, body = get(f"{api_base}/feeds/cap/{crisis_event_id}.xml")
+    status, body = get(f"{api_base}/v1/feeds/cap/{crisis_event_id}.xml")
     check("GET /feeds/cap/{id}.xml returns 200", status == 200, f"got {status}")
     check("CAP feed contains <alert>", isinstance(body, str) and "<alert" in body)
 
@@ -109,7 +109,7 @@ def run(api_base: str, crisis_event_id: str) -> None:
         "channel":                  "pwa",
         "gps_lat":                  "-1.2577",
         "gps_lon":                  "36.8614",
-        "description":              "Smoke test report — safe to delete",
+        "modular_fields":           "{}",
     })
     check("POST /v1/reports returns 201", status == 201, f"got {status}")
     check("Response has report_id", isinstance(body, dict) and "report_id" in body)

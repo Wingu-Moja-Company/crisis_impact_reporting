@@ -57,6 +57,9 @@ def load(input_path: Path, country: str, region: str) -> None:
             area_sqm  = EXCLUDED.area_sqm,
             source    = EXCLUDED.source
     """
+    # ST_GeomFromGeoJSON is injected as a literal so execute_values treats the
+    # geometry column value as a PostGIS function call, not a plain string.
+    template = "(%s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s, %s)"
 
     conn = _get_conn()
     try:
@@ -68,18 +71,18 @@ def load(input_path: Path, country: str, region: str) -> None:
                     _building_id(country, region, i),
                     country.upper(),
                     region.lower(),
-                    f"SRID=4326;{geom}",   # PostGIS WKT with SRID
+                    geom,
                     "microsoft",
                     _area_sqm(feature),
                 )
                 batch.append(row)
                 if len(batch) >= BATCH_SIZE:
-                    psycopg2.extras.execute_values(cur, insert_sql, batch)
+                    psycopg2.extras.execute_values(cur, insert_sql, batch, template=template)
                     conn.commit()
                     print(f"  inserted {i + 1:,} / {len(features):,}", end="\r")
                     batch = []
             if batch:
-                psycopg2.extras.execute_values(cur, insert_sql, batch)
+                psycopg2.extras.execute_values(cur, insert_sql, batch, template=template)
                 conn.commit()
     finally:
         conn.close()
