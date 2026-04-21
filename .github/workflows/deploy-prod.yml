@@ -18,6 +18,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install pipeline dependencies
+        run: pip install -r functions/requirements.txt --target functions/.python_packages/lib/site-packages
+
+      - name: Install bot dependencies
+        run: pip install -r bot/requirements.txt --target bot/.python_packages/lib/site-packages
+
       - name: Azure login
         uses: azure/login@v2
         with:
@@ -28,14 +34,14 @@ jobs:
         with:
           app-name:    func-crisis-pipeline-ob7ravt3zfbzi
           package:     functions
-          scm-do-build-during-deployment: true
+          scm-do-build-during-deployment: false
 
       - name: Deploy bot function app
         uses: azure/functions-action@v1
         with:
           app-name:    func-crisis-bot-ob7ravt3zfbzi
           package:     bot
-          scm-do-build-during-deployment: true
+          scm-do-build-during-deployment: false
 
   deploy-pwa:
     name: Deploy PWA to Azure Static Web Apps

@@ -61,3 +61,6 @@ coverage.xml
 # TypeScript compiled JS output co-located with source
 pwa/src/**/*.js
 dashboard/src/**/*.js
+
+# Azure Functions pre-built packages (installed by CI)
+.python_packages/
