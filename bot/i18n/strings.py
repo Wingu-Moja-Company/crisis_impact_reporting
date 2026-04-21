@@ -99,6 +99,22 @@ STRINGS: dict[str, dict[str, str]] = {
         "ru": "Требуется ли расчистка завалов?",
         "es": "¿Hay escombros que requieran limpieza?",
     },
+    "location_found": {
+        "en": "📍 Located: {place}. Continuing…",
+        "ar": "📍 تم تحديد الموقع: {place}. جارٍ المتابعة…",
+        "fr": "📍 Localisé : {place}. Poursuite…",
+        "zh": "📍 已定位：{place}。继续…",
+        "ru": "📍 Местоположение найдено: {place}. Продолжаем…",
+        "es": "📍 Ubicado: {place}. Continuando…",
+    },
+    "location_not_found": {
+        "en": "📍 Couldn't find \"{query}\" on the map — saved as a text description. Continuing…",
+        "ar": "📍 لم يتم العثور على \"{query}\" على الخريطة — تم حفظه كوصف نصي. جارٍ المتابعة…",
+        "fr": "📍 \"{query}\" introuvable sur la carte — enregistré comme description. Poursuite…",
+        "zh": "📍 在地图上找不到 {query} — 已保存为文字描述。继续…",
+        "ru": "📍 \"{query}\" не найдено на карте — сохранено как текстовое описание. Продолжаем…",
+        "es": "📍 No se encontró \"{query}\" en el mapa — guardado como descripción. Continuando…",
+    },
     "yes": {
         "en": "Yes", "ar": "نعم", "fr": "Oui", "zh": "是", "ru": "Да", "es": "Sí",
     },
