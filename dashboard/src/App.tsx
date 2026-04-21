@@ -22,16 +22,18 @@ function getReportFromUrl(): string | null {
 }
 
 export default function App() {
-  const [view, setView]                     = useState<View>("map");
+  const [view, setView]                         = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [selectedReport, setSelectedReport]     = useState<string | null>(getReportFromUrl);
   const [showExport, setShowExport]             = useState(false);
+  const [drawerOpen, setDrawerOpen]             = useState(false);
 
   const { reports: liveReports, connected } = useLiveReports(CRISIS_EVENT_ID);
 
   function handleReportSelect(reportId: string) {
     setSelectedReport(reportId);
-    setView("map"); // switch to map view if on heatmap
+    setView("map");
+    setDrawerOpen(false); // close drawer after selecting on mobile
   }
 
   function handleBuildingSelect(buildingId: string) {
@@ -58,7 +60,24 @@ export default function App() {
       />
 
       <div className="dashboard-body">
-        <aside className="sidebar">
+        {/* Backdrop — tapping closes the drawer on mobile */}
+        {drawerOpen && (
+          <div className="sidebar-backdrop" onClick={() => setDrawerOpen(false)} />
+        )}
+
+        <aside className={`sidebar${drawerOpen ? " sidebar--open" : ""}`}>
+          {/* Drag handle / close button visible only on mobile */}
+          <div className="sidebar-handle">
+            <span className="sidebar-handle-label">
+              Reports ({liveReports.length})
+            </span>
+            <button
+              className="sidebar-close-btn"
+              onClick={() => setDrawerOpen(false)}
+              aria-label="Close panel"
+            >✕</button>
+          </div>
+
           <IncidentFeed
             reports={liveReports}
             selectedReportId={selectedReport}
@@ -78,6 +97,15 @@ export default function App() {
           ) : (
             <CoverageHeatmap crisisEventId={CRISIS_EVENT_ID} center={MAP_CENTER} />
           )}
+
+          {/* Floating feed toggle — mobile only */}
+          <button
+            className="feed-fab"
+            onClick={() => setDrawerOpen((o) => !o)}
+            aria-label="Toggle incident feed"
+          >
+            📋 {liveReports.length} Reports
+          </button>
         </main>
 
         {selectedBuilding && (
