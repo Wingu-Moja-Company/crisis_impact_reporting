@@ -8,12 +8,36 @@ GET /api/v1/crisis-events
 GET /api/v1/crisis-events/{id}/stats
 """
 
+import hmac
 import json
 import os
 import azure.functions as func
 
 from export.geojson import export_geojson
 from export.cap_feed import build_cap_feed
+
+
+_UNAUTHORIZED = func.HttpResponse(
+    '{"error":"unauthorized"}', status_code=401, mimetype="application/json",
+    headers={"WWW-Authenticate": 'ApiKey realm="crisis-export"'},
+)
+
+_MAX_LIMIT = 5_000  # hard cap on result set size
+
+
+def _check_api_key(req: func.HttpRequest) -> func.HttpResponse | None:
+    """
+    Validate the X-API-Key header against EXPORT_API_KEY env var.
+    Returns a 401 response if invalid; None if the request is authorised.
+    When EXPORT_API_KEY is not set the check is skipped (open / dev mode).
+    """
+    expected = os.environ.get("EXPORT_API_KEY", "")
+    if not expected:
+        return None  # Not configured — permit all (development)
+    provided = req.headers.get("X-API-Key", "")
+    if not provided or not hmac.compare_digest(provided, expected):
+        return _UNAUTHORIZED
+    return None
 
 
 def _parse_bbox(raw: str | None):
@@ -24,6 +48,9 @@ def _parse_bbox(raw: str | None):
 
 
 def reports(req: func.HttpRequest) -> func.HttpResponse:
+    if (err := _check_api_key(req)):
+        return err
+
     crisis_event_id = req.params.get("crisis_event_id")
     if not crisis_event_id:
         return func.HttpResponse('{"error":"crisis_event_id required"}', status_code=400, mimetype="application/json")
@@ -33,7 +60,7 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
     dmg        = req.params.get("damage_level")
     infra      = req.params.get("infra_type")
     since      = req.params.get("since")
-    limit      = int(req.params.get("limit", "1000"))
+    limit      = min(int(req.params.get("limit", "1000")), _MAX_LIMIT)
     offset     = int(req.params.get("offset", "0"))
 
     if fmt == "csv":
@@ -54,12 +81,16 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
 
 
 def cap_feed(req: func.HttpRequest) -> func.HttpResponse:
+    if (err := _check_api_key(req)):
+        return err
     crisis_event_id = req.route_params.get("crisis_event_id", "")
     xml = build_cap_feed(crisis_event_id)
     return func.HttpResponse(xml, mimetype="application/xml")
 
 
 def building_history(req: func.HttpRequest) -> func.HttpResponse:
+    if (err := _check_api_key(req)):
+        return err
     from azure.cosmos import CosmosClient
     building_id = req.route_params.get("building_id", "")
     client = CosmosClient(os.environ["COSMOS_ENDPOINT"], os.environ["COSMOS_KEY"])
@@ -73,6 +104,8 @@ def building_history(req: func.HttpRequest) -> func.HttpResponse:
 
 
 def crisis_events(req: func.HttpRequest) -> func.HttpResponse:
+    if (err := _check_api_key(req)):
+        return err
     from azure.cosmos import CosmosClient
     client = CosmosClient(os.environ["COSMOS_ENDPOINT"], os.environ["COSMOS_KEY"])
     container = client.get_database_client(os.environ["COSMOS_DATABASE"]).get_container_client("crisis_events")
@@ -81,6 +114,8 @@ def crisis_events(req: func.HttpRequest) -> func.HttpResponse:
 
 
 def crisis_event_stats(req: func.HttpRequest) -> func.HttpResponse:
+    if (err := _check_api_key(req)):
+        return err
     from azure.cosmos import CosmosClient
     crisis_event_id = req.route_params.get("crisis_event_id", "")
     client = CosmosClient(os.environ["COSMOS_ENDPOINT"], os.environ["COSMOS_KEY"])

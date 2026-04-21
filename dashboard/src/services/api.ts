@@ -1,5 +1,12 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
+/** Sent as X-API-Key on all export/read requests. Set VITE_EXPORT_API_KEY at build time. */
+const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
+
+function exportHeaders(): HeadersInit {
+  return EXPORT_API_KEY ? { "X-API-Key": EXPORT_API_KEY } : {};
+}
+
 export interface Report {
   report_id: string;
   crisis_event_id: string;
@@ -43,19 +50,19 @@ export async function fetchReports(params: {
   const query = new URLSearchParams(
     Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)) as Record<string, string>
   );
-  const res = await fetch(`${API_BASE}/v1/reports?${query}`);
+  const res = await fetch(`${API_BASE}/v1/reports?${query}`, { headers: exportHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchBuildingHistory(buildingId: string): Promise<BuildingVersion[]> {
-  const res = await fetch(`${API_BASE}/v1/buildings/${buildingId}/history`);
+  const res = await fetch(`${API_BASE}/v1/buildings/${buildingId}/history`, { headers: exportHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchStats(crisisEventId: string): Promise<CrisisStats> {
-  const res = await fetch(`${API_BASE}/v1/crisis-events/${crisisEventId}/stats`);
+  const res = await fetch(`${API_BASE}/v1/crisis-events/${crisisEventId}/stats`, { headers: exportHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

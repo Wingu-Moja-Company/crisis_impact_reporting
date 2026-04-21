@@ -36,10 +36,28 @@ def _cosmos_container(name: str):
 # Step helpers
 # ---------------------------------------------------------------------------
 
+_MAX_PHOTO_BYTES  = 10 * 1024 * 1024   # 10 MB hard limit
+_MAX_PHOTO_PIXELS = 4096                # max width or height in pixels
+
+
 def _store_photo(photo_bytes: bytes, crisis_event_id: str, report_id: str) -> str:
-    """Strip EXIF, store in Blob Storage. Returns blob path."""
+    """Validate, strip EXIF, resize if needed, store in Blob Storage. Returns blob path."""
+    # ── Size guard (before opening with PIL to avoid zip-bomb risk) ──────────
+    if len(photo_bytes) > _MAX_PHOTO_BYTES:
+        raise ValueError(
+            f"Photo exceeds maximum allowed size "
+            f"({len(photo_bytes) // 1024} KB > {_MAX_PHOTO_BYTES // 1024} KB)"
+        )
+
     img = Image.open(io.BytesIO(photo_bytes))
-    clean = img.copy()          # PIL copy drops all EXIF metadata
+
+    # ── Dimension guard ──────────────────────────────────────────────────────
+    w, h = img.size
+    if w > _MAX_PHOTO_PIXELS or h > _MAX_PHOTO_PIXELS:
+        img.thumbnail((_MAX_PHOTO_PIXELS, _MAX_PHOTO_PIXELS), Image.LANCZOS)
+
+    # PIL copy (or thumbnail) drops all EXIF metadata
+    clean = img.copy()
 
     buf = io.BytesIO()
     clean.save(buf, format="JPEG")
@@ -150,6 +168,12 @@ def process_report(
     blob_path = None
     exif_lat, exif_lon = None, None
     if photo_bytes:
+        # Early size check (before PIL touches the bytes) prevents decompression bombs
+        if len(photo_bytes) > _MAX_PHOTO_BYTES:
+            raise ValueError(
+                f"Photo exceeds maximum allowed size "
+                f"({len(photo_bytes) // 1024} KB > {_MAX_PHOTO_BYTES // 1024} KB)"
+            )
         exif_lat, exif_lon = _extract_exif_gps(photo_bytes)
         blob_path = _store_photo(photo_bytes, submission.crisis_event_id, report_id)
 

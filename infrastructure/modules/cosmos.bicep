@@ -6,9 +6,9 @@ param crisisEventId string
 
 @description('Cosmos DB throughput mode')
 @allowed(['serverless', 'autoscale', 'manual'])
-param throughputMode string = 'autoscale'
+param throughputMode string = 'serverless'
 
-var accountName = 'cosmos-crisis-platform-${uniqueString(resourceGroup().id)}'
+var accountName = 'cosmos-crisis-srv-${uniqueString(resourceGroup().id)}'
 
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
   name: accountName
@@ -19,6 +19,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
     locations: [{ locationName: location, failoverPriority: 0 }]
     enableAutomaticFailover: false
+    capabilities: throughputMode == 'serverless' ? [{ name: 'EnableServerless' }] : []
   }
 }
 

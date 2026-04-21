@@ -6,6 +6,8 @@ Entry point for two run modes:
 
 import argparse
 import asyncio
+import hmac
+import os
 
 import azure.functions as func
 from telegram import Update
@@ -41,8 +43,23 @@ async def _get_app() -> Application:
 # ---------------------------------------------------------------------------
 
 async def telegram_webhook(req: func.HttpRequest) -> func.HttpResponse:
+    # ── Security: verify Telegram webhook secret token ──────────────────────
+    # Set TELEGRAM_WEBHOOK_SECRET in App Settings and register the webhook
+    # with the same value via setWebhook?secret_token=<value>.
+    # If the env var is absent (local dev / first deploy) verification is skipped.
+    expected_secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+    if expected_secret:
+        incoming_secret = req.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if not hmac.compare_digest(incoming_secret, expected_secret):
+            return func.HttpResponse("Forbidden", status_code=403)
+
     app = await _get_app()
-    update = Update.de_json(req.get_json(), app.bot)
+    try:
+        body = req.get_json()
+    except Exception:
+        return func.HttpResponse("Bad Request", status_code=400)
+
+    update = Update.de_json(body, app.bot)
     await app.process_update(update)
     return func.HttpResponse("OK", status_code=200)
 

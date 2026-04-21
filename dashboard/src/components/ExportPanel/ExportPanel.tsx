@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { buildExportUrl } from "../../services/api";
 
+const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
+
 interface Props {
   crisisEventId: string;
 }
@@ -25,7 +27,7 @@ export function ExportPanel({ crisisEventId }: Props) {
     try {
       // Fetch via JS so the response is same-origin as a blob: URL.
       // Direct cross-origin <a download> links are silently ignored by browsers.
-      const res = await fetch(url);
+      const res = await fetch(url, EXPORT_API_KEY ? { headers: { "X-API-Key": EXPORT_API_KEY } } : {});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
