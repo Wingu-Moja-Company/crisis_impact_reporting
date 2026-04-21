@@ -14,7 +14,7 @@ This document describes how platform report fields map to humanitarian data stan
 | `building_id` | `structure_id` | Microsoft Global Building Footprint ID |
 | `damage.description_en` | `field_observation` | English translation always stored |
 | `submitted_at` | `observation_datetime` | ISO 8601 UTC |
-| `channel` | `data_source` | `telegram` / `pwa` / `sms` |
+| `channel` | `data_source` | `telegram` / `pwa` |
 | `meta.submitter_tier` | `reporter_reliability` | `public` = standard, `verified` = high |
 
 ## Damage grade mapping

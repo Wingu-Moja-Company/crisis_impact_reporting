@@ -112,7 +112,6 @@ python tests/e2e/smoke_test.py --env local --crisis-id ke-flood-dev
 |---|---|---|
 | Telegram bot | python-telegram-bot v21+ | Messaging-first, no app install |
 | Offline PWA | React 18 + PouchDB + Workbox | Zero connectivity environments |
-| SMS fallback | Africa's Talking | Feature phones, no smartphone |
 
 ---
 

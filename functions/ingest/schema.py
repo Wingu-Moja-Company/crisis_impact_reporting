@@ -39,7 +39,7 @@ class DamageReportSubmission(BaseModel):
     crisis_nature: CrisisNature
     requires_debris_clearing: bool
     crisis_event_id: str
-    channel: str  # telegram | pwa | sms
+    channel: str  # telegram | pwa
 
     # Location — at least one required
     gps_lat: Optional[float] = None
@@ -63,7 +63,7 @@ class DamageReportSubmission(BaseModel):
     @field_validator("channel")
     @classmethod
     def valid_channel(cls, v: str) -> str:
-        allowed = {"telegram", "pwa", "sms"}
+        allowed = {"telegram", "pwa"}
         if v not in allowed:
             raise ValueError(f"channel must be one of {allowed}")
         return v

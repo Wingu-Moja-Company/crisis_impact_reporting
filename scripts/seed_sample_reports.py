@@ -41,7 +41,7 @@ REPORTS = [
         "requires_debris_clearing": "true",
         "description": "Bridge over Mathare River has large section washed out. Pedestrian access cut off.",
         "infrastructure_name": "Mathare River footbridge",
-        "channel": "sms",
+        "channel": "telegram",
     },
 
     # --- Westlands / Parklands ---
@@ -85,7 +85,7 @@ REPORTS = [
         "requires_debris_clearing": "true",
         "description": "Road surface cracked and potholed after flash flood. Slow-moving traffic.",
         "infrastructure_name": "River Road / Ronald Ngala St junction",
-        "channel": "sms",
+        "channel": "telegram",
     },
 
     # --- Kibera ---
@@ -117,7 +117,7 @@ REPORTS = [
         "requires_debris_clearing": "true",
         "description": "Main access road into Kibera Village blocked by large debris pile.",
         "infrastructure_name": "Olympic Estate access road",
-        "channel": "sms",
+        "channel": "telegram",
     },
 
     # --- Karen / Lang'ata ---
@@ -173,7 +173,7 @@ REPORTS = [
         "requires_debris_clearing": "true",
         "description": "Bridge over Ruiru River washed away. Road to Thika completely cut.",
         "infrastructure_name": "Ruiru River bridge, Kamakis road",
-        "channel": "sms",
+        "channel": "telegram",
     },
 ]
 

@@ -78,11 +78,6 @@ python tests/e2e/smoke_test.py --env prod --crisis-id $CRISIS_EVENT_ID
 ## Hour 6–12: Activate and notify
 
 ```bash
-# Broadcast SMS activation via Africa's Talking
-python scripts/sms_broadcast.py \
-  --region $CRISIS_REGION \
-  --message "Crisis reporting is now active. Submit damage reports at https://report.crisisplatform.io"
-
 # Notify registered partner webhooks (OCHA HDX, IFRC GO, etc.)
 python scripts/notify_partners.py --crisis-id $CRISIS_EVENT_ID
 ```
