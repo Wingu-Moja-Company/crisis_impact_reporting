@@ -1,17 +1,15 @@
-# UNDP Crisis Impact Reporting Platform
+# Crisis Impact Reporting Platform
 
-**UNDP / Wazoku Innocentive — Build the Future of Crisis Mapping**
+A real-time crisis damage reporting platform enabling affected communities to submit structured damage reports via Telegram or an offline-first Progressive Web App (PWA). Reports are stored, processed, and exported in humanitarian-standard formats for partner organisations worldwide.
 
-A real-time crisis damage reporting platform enabling affected communities to submit structured damage reports via Telegram or an offline-first Progressive Web App (PWA). Reports are stored, processed, and exported in humanitarian-standard formats for UNDP's RAPIDA methodology and partner organisations worldwide.
-
-**Submission deadline:** 23 June 2026 · **Prize:** $50,000 USD · **Licence:** MIT
+**Licence:** MIT
 
 ---
 
 ## Features
 
 - **Dual collection channels** — Telegram bot (no app install) + offline-first PWA
-- **UNDP RAPIDA compatible** — 3-tier damage schema, building-level versioning
+- **3-tier damage schema** — minimal / partial / complete, building-level versioning
 - **6 UN languages** — AR, ZH, EN, FR, RU, ES with RTL support for Arabic
 - **Offline-first** — PouchDB queues reports locally; syncs when connectivity returns
 - **Building footprints** — Microsoft Global Building Footprints via Leaflet.js
@@ -31,7 +29,7 @@ A real-time crisis damage reporting platform enabling affected communities to su
 ├── pwa/              # Offline PWA (React 18 + TypeScript + PouchDB)
 ├── dashboard/        # Responder dashboard (React 18 + Leaflet)
 ├── functions/        # Azure Functions pipeline (Python)
-│   ├── ingest/       # 15-step ingestion + validation pipeline
+│   ├── ingest/       # Ingestion + validation pipeline
 │   ├── export/       # GeoJSON / CSV / Shapefile / CAP feeds
 │   ├── buildings/    # Footprint query + building versioning
 │   ├── engagement/   # Badge system
@@ -40,7 +38,7 @@ A real-time crisis damage reporting platform enabling affected communities to su
 ├── schemas/          # Crisis event form schemas (flood, earthquake, conflict)
 ├── scripts/          # Ops scripts (footprint download, crisis setup, etc.)
 ├── data/footprints/  # Downloaded building footprint data (git-ignored)
-├── docs/             # RAPIDA mapping, partner API, deployment guide
+├── docs/             # Field mapping, partner API, deployment guide
 └── tests/            # Load tests, e2e smoke tests
 ```
 
@@ -59,8 +57,8 @@ A real-time crisis damage reporting platform enabling affected communities to su
 ### Quick Start
 
 ```bash
-# 1. Clone
-git clone https://github.com/Wingu-Moja-Company/crisis_impact_reporting.git
+# 1. Clone and enter repo
+git clone <repo-url>
 cd crisis_impact_reporting
 
 # 2. Python environment
@@ -120,7 +118,7 @@ python tests/e2e/smoke_test.py --env local --crisis-id ke-flood-dev
 
 ## Data Model
 
-Reports follow UNDP's RAPIDA damage classification:
+Damage classification:
 
 - **Damage levels:** `minimal` · `partial` · `complete`
 - **Infrastructure types:** residential · commercial · government · utility · transport · community · public_space · other
@@ -130,7 +128,7 @@ All submissions are linked to a Microsoft Global Building Footprint polygon (`bu
 
 ---
 
-## Deployment (48-Hour Crisis Runbook)
+## Deployment
 
 See [docs/deployment.md](docs/deployment.md) for the full runbook. Summary:
 
@@ -157,13 +155,8 @@ python scripts/create_crisis_event.py \
 | python-telegram-bot | LGPL-3.0 |
 | React + PouchDB + Workbox + Leaflet.js | MIT / Apache-2.0 / BSD |
 | i18next + react-i18next | MIT |
-| Pydantic + Pillow + Pandas + Fiona + Shapely | MIT / BSD |
+| Pydantic + Pillow + Fiona + Shapely | MIT / BSD |
 | PostGIS | GPL-2.0 |
 | Microsoft Global Building Footprints | ODbL |
 
 All original code in this repository is published under the **MIT Licence**.
-
----
-
-*Built for the UNDP / Wazoku Innocentive — Build the Future of Crisis Mapping challenge*
-*Wingu Moja Company · Nairobi, Kenya*

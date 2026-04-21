@@ -2,7 +2,7 @@
 
 Base URL: `https://api.crisisplatform.io/api`
 
-Authentication is via API key in the `X-API-Key` header (partner tier) or Azure AD B2C token (UNDP admin tier). Public endpoints require no authentication.
+Authentication is via API key in the `X-API-Key` header (partner tier) or Azure AD B2C token (admin tier). Public endpoints require no authentication.
 
 ---
 
@@ -54,7 +54,7 @@ GET /v1/reports
 
 **GeoJSON response** — `Content-Type: application/geo+json`
 
-Compatible with OCHA HDX, QGIS, ArcGIS, and UNDP RAPIDA toolchain.
+Compatible with OCHA HDX, QGIS, and ArcGIS.
 
 ---
 
@@ -82,7 +82,7 @@ Common Alerting Protocol v1.2 (ISO 22324) feed. Updated every 5 minutes. Include
 
 Register a callback URL to receive real-time report notifications via CloudEvents 1.0.
 
-**Registration** — contact UNDP platform team to register a subscription with filter criteria:
+**Registration** — contact the platform team to register a subscription with filter criteria:
 
 | Filter | Description |
 |---|---|
@@ -113,4 +113,4 @@ Register a callback URL to receive real-time report notifications via CloudEvent
 |---|---|---|
 | Public | 100 req/min per IP | None |
 | Partner | 1,000 req/min | API key |
-| UNDP Admin | Unlimited | Azure AD B2C |
+| Platform Admin | Unlimited | Azure AD B2C |

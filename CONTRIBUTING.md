@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in contributing to the UNDP Crisis Impact Reporting Platform.
+Thank you for your interest in contributing to the Crisis Impact Reporting Platform.
 
 ## Getting started
 
