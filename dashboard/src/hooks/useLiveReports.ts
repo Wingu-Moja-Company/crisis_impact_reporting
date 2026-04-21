@@ -37,7 +37,7 @@ export function useLiveReports(crisisEventId: string) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // ── Initial REST fetch — load existing reports ────────────────────────────
+  // ── Initial REST fetch + 30-second polling ───────────────────────────────
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -51,13 +51,16 @@ export function useLiveReports(crisisEventId: string) {
         const loaded = geojson.features
           .map(featureToReport)
           .filter((r): r is LiveReport => r !== null && r.coordinates !== null);
-        setReports(loaded);
+        // Replace only if counts differ or when WS isn't keeping things live.
+        // Sort newest-first so the feed always shows the latest at top.
+        setReports(loaded.sort((a, b) => b.submitted_at.localeCompare(a.submitted_at)));
       } catch {
         // non-critical — map still works, just empty
       }
     }
     load();
-    return () => { cancelled = true; };
+    const interval = setInterval(load, 30_000); // poll every 30 s
+    return () => { cancelled = true; clearInterval(interval); };
   }, [crisisEventId]);
 
   // ── WebSocket — prepend incoming reports in real time ────────────────────

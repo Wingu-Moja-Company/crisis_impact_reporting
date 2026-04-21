@@ -114,7 +114,7 @@ export function DashboardMap({
         radius:      markerRadius(r.damage_level, isSelected),
         color:       isSelected ? "#fff" : DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
         fillColor:   DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
-        fillOpacity: isSelected ? 1 : 0.75,
+        fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
         weight:      isSelected ? 3 : 1.5,
       })
         .bindPopup(reportPopup(r), { maxWidth: 260 })
@@ -123,11 +123,25 @@ export function DashboardMap({
       markerIndex.current.set(r.report_id, marker);
     }
 
-    // Auto-fit bounds on first load only
-    if (!initialFit.current) {
+    // Auto-fit bounds on first load only (skip if a report is pre-selected from URL)
+    if (!initialFit.current && !selectedReportId) {
       const latlngs = withCoords.map((r) => [r.coordinates![1], r.coordinates![0]] as [number, number]);
       mapRef.current.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 14 });
       initialFit.current = true;
+    }
+
+    // If a report was pre-selected (e.g. from ?report= URL param), fly to it now
+    // that markers have been built. This handles the race where selectedReportId
+    // is set before the REST fetch completes.
+    if (selectedReportId) {
+      const selectedMarker = markerIndex.current.get(selectedReportId);
+      const selectedReport = liveReports.find((r) => r.report_id === selectedReportId);
+      if (selectedMarker && selectedReport?.coordinates) {
+        const [lon, lat] = selectedReport.coordinates;
+        mapRef.current.flyTo([lat, lon], Math.max(mapRef.current.getZoom(), 15), { duration: 0.8 });
+        selectedMarker.openPopup();
+        initialFit.current = true; // prevent fitBounds from overriding
+      }
     }
   }, [liveReports]);
 

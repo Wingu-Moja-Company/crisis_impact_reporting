@@ -12,10 +12,19 @@ const MAP_CENTER: [number, number] = [-1.2577, 36.8614]; // Nairobi default
 
 type View = "map" | "heatmap";
 
+/** Read ?report= from the URL on first load so Telegram links auto-select. */
+function getReportFromUrl(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get("report");
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const [view, setView]                     = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport]     = useState<string | null>(null);
+  const [selectedReport, setSelectedReport]     = useState<string | null>(getReportFromUrl);
   const [showExport, setShowExport]             = useState(false);
 
   const { reports: liveReports, connected } = useLiveReports(CRISIS_EVENT_ID);
