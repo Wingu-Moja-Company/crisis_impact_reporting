@@ -64,14 +64,12 @@ function reportPopup(r: LiveReport): string {
   const nature   = esc(r.crisis_nature) || "—";
   const chanIcon = CHANNEL_ICON[r.channel] ?? "📡";
   const tier     = r.submitter_tier === "verified" ? "✓ Verified" : "👤 Public";
-  const aiPct    = r.ai_vision_confidence != null ? Math.round(r.ai_vision_confidence * 100) : null;
 
   const photoHtml = r.photo_url ? `
     <div class="pp-media">
       <img src="${esc(r.photo_url)}" alt="Damage photo" class="pp-photo"
            onerror="this.parentElement.style.display='none'">
-      ${aiPct != null ? `<span class="pp-ai">AI ${aiPct}%</span>` : ""}
-    </div>` : (aiPct != null ? `<div class="pp-ai-only">AI confidence: ${aiPct}%</div>` : "");
+    </div>` : `<div class="pp-no-photo">📷 No photo submitted</div>`;
 
   const debrisHtml = r.requires_debris_clearing
     ? `<div class="pp-debris">⚠️ Debris clearing required</div>` : "";
@@ -253,9 +251,9 @@ export function DashboardMap({
         .pp-media { position: relative; margin-bottom: 8px; }
         .pp-photo { width: 100%; height: 120px; object-fit: cover; border-radius: 4px;
           display: block; background: #eee; }
-        .pp-ai { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,.65);
-          color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
-        .pp-ai-only { font-size: 11px; color: #666; margin-bottom: 6px; }
+        .pp-no-photo { height: 36px; display: flex; align-items: center; justify-content: center;
+          font-size: 11px; color: #aaa; background: #f9f9f9; border-radius: 4px;
+          margin-bottom: 8px; border: 1px dashed #ddd; }
 
         /* Debris alert */
         .pp-debris { background: #fff3cd; border: 1px solid #f59e0b; border-radius: 4px;

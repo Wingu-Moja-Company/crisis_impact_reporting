@@ -101,11 +101,6 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
                   {r.submitter_tier === "verified" && (
                     <span className="feed-verified">✓ Verified</span>
                   )}
-                  {r.ai_vision_confidence != null && (
-                    <span className="feed-ai">
-                      AI {Math.round(r.ai_vision_confidence * 100)}%
-                    </span>
-                  )}
                 </div>
               </div>
 

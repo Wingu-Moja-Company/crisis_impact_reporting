@@ -254,11 +254,6 @@ body {
   font-weight: 600;
 }
 
-.feed-ai {
-  color: var(--blue-dark, #1142a6);
-  font-weight: 600;
-}
-
 /* ── Map container ── */
 .map-container {
   position: relative;
