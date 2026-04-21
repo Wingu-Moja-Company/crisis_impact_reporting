@@ -32,6 +32,7 @@ export interface CrisisStats {
 
 export async function fetchReports(params: {
   crisis_event_id: string;
+  format?: "geojson" | "csv" | "shapefile";
   bbox?: string;
   damage_level?: string;
   infra_type?: string;
