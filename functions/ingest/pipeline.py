@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timezone
 
 from azure.cosmos import CosmosClient
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, ContentSettings
 from PIL import Image
 
 from buildings.footprint_query import resolve_building_id
@@ -46,11 +46,11 @@ def _store_photo(photo_bytes: bytes, crisis_event_id: str, report_id: str) -> st
     buf.seek(0)
 
     blob_path = f"{crisis_event_id}/{report_id}.jpg"
-    account = os.environ["STORAGE_ACCOUNT_NAME"]
     conn_str = os.environ["STORAGE_CONNECTION_STRING"]
     blob_client = BlobServiceClient.from_connection_string(conn_str)
     blob_client.get_blob_client("report-photos", blob_path).upload_blob(
-        buf, overwrite=True, content_settings={"content_type": "image/jpeg"}
+        buf, overwrite=True,
+        content_settings=ContentSettings(content_type="image/jpeg"),
     )
     return blob_path
 
