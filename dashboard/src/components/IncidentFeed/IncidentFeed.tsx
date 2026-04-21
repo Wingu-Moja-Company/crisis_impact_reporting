@@ -13,14 +13,19 @@ const DAMAGE_COLORS: Record<string, string> = {
 
 function timeAgo(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
+  if (diff < 60)   return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 export function IncidentFeed({ reports, onSelect }: Props) {
   if (reports.length === 0) {
-    return <p className="feed-empty">No live reports yet.</p>;
+    return (
+      <div className="feed-empty">
+        <p>Loading reports…</p>
+      </div>
+    );
   }
 
   return (
@@ -32,9 +37,17 @@ export function IncidentFeed({ reports, onSelect }: Props) {
           style={{ borderLeft: `4px solid ${DAMAGE_COLORS[r.damage_level] ?? "#888"}` }}
           onClick={() => r.building_id && onSelect(r.building_id)}
         >
-          <span className="feed-level">{r.damage_level}</span>
-          <span className="feed-channel">{r.channel}</span>
-          <span className="feed-time">{timeAgo(r.submitted_at)}</span>
+          <div className="feed-row">
+            <span className="feed-level">{r.damage_level}</span>
+            <span className="feed-channel">{r.channel}</span>
+            <span className="feed-time">{timeAgo(r.submitted_at)}</span>
+          </div>
+          {r.infrastructure_types?.length > 0 && (
+            <div className="feed-infra">{r.infrastructure_types.join(", ")}</div>
+          )}
+          {r.description_en && (
+            <div className="feed-desc">{r.description_en.slice(0, 80)}{r.description_en.length > 80 ? "…" : ""}</div>
+          )}
         </li>
       ))}
     </ul>
