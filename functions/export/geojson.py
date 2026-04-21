@@ -62,7 +62,9 @@ def build_feature(doc: dict) -> dict | None:
             "crisis_nature":            doc["damage"]["crisis_nature"],
             "requires_debris_clearing": doc["damage"]["requires_debris_clearing"],
             "description_en":           doc["damage"].get("description_en"),
-            "ai_vision_confidence":     doc["damage"].get("ai_vision_confidence"),
+            "ai_vision_confidence":      doc["damage"].get("ai_vision_confidence"),
+            "ai_vision_summary":         doc["damage"].get("ai_vision_summary"),
+            "ai_vision_debris_confirmed": doc["damage"].get("ai_vision_debris_confirmed"),
             # Location detail
             "what3words":               doc.get("location", {}).get("what3words"),
             "location_description":     doc.get("location", {}).get("location_description"),

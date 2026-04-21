@@ -94,43 +94,86 @@ def _extract_exif_gps(photo_bytes: bytes) -> tuple[float | None, float | None]:
         return None, None
 
 
-def _ai_vision_score(photo_bytes: bytes) -> tuple[float, str | None]:
+_DAMAGE_PROMPT = """You are a humanitarian field damage assessor reviewing a photo submitted during a crisis response.
+
+Assess the structural damage visible and respond with JSON only — no explanation outside the JSON:
+
+{
+  "damage_level": "minimal|partial|complete|unclear",
+  "confidence": 0.0,
+  "infrastructure_visible": true,
+  "debris_visible": false,
+  "rejection_reason": null,
+  "summary": "One sentence max 20 words for field responders"
+}
+
+Damage level guide:
+- minimal: Structurally sound, cosmetic damage only (cracks, water marks), building still functional
+- partial: Repairable structural damage, some elements compromised, proceed with caution
+- complete: Structurally unsafe or destroyed, must not be entered
+- unclear: Cannot determine damage level from this photo
+
+Set rejection_reason to "no_structure", "too_dark", or "unrelated" if the photo is not usable.
+Set infrastructure_visible to false if no structure is clearly visible."""
+
+
+def _ai_vision_score(photo_bytes: bytes) -> dict:
     """
-    Call Azure AI Vision to assess structural damage confidence.
-    Returns (confidence_score, suggested_damage_level).
+    Use Azure OpenAI GPT-4o (via Azure AI Foundry) to assess structural damage
+    from a submitted photo. Returns a dict with confidence, suggested_level,
+    plain-English summary, and debris flag.
     Falls back gracefully if the service is unavailable.
     """
-    import urllib.request
+    import base64
 
-    endpoint = os.environ.get("AI_VISION_ENDPOINT", "")
-    key = os.environ.get("AI_VISION_KEY", "")
+    endpoint = os.environ.get("AOAI_ENDPOINT", "").rstrip("/")
+    key      = os.environ.get("AOAI_KEY", "")
+    deploy   = os.environ.get("AOAI_DEPLOYMENT", "gpt-4o")
+
+    _null = {"confidence": 0.0, "suggested_level": None, "summary": None,
+             "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
+
     if not endpoint or not key:
-        return 0.0, None
+        return _null
 
-    url = f"{endpoint}/computervision/imageanalysis:analyze?api-version=2023-02-01-preview&features=tags,objects"
+    b64 = base64.b64encode(photo_bytes).decode()
+    payload = json.dumps({
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": _DAMAGE_PROMPT},
+                {"type": "image_url", "image_url": {
+                    "url": f"data:image/jpeg;base64,{b64}",
+                    "detail": "low",   # low detail = faster + cheaper, sufficient for damage grading
+                }},
+            ],
+        }],
+        "max_tokens": 200,
+        "response_format": {"type": "json_object"},
+    }).encode()
+
+    url = f"{endpoint}/openai/deployments/{deploy}/chat/completions?api-version=2024-10-21"
     req = urllib.request.Request(
-        url,
-        data=photo_bytes,
-        headers={"Ocp-Apim-Subscription-Key": key, "Content-Type": "image/jpeg"},
+        url, data=payload,
+        headers={"api-key": key, "Content-Type": "application/json"},
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
             result = json.loads(resp.read())
+        content = json.loads(result["choices"][0]["message"]["content"])
     except Exception:
-        return 0.0, None
+        return _null
 
-    tags = [t["name"].lower() for t in result.get("tagsResult", {}).get("values", [])]
-    if any(t in tags for t in ("ruin", "rubble", "collapsed", "destroyed")):
-        return 0.9, "complete"
-    if any(t in tags for t in ("damaged", "broken", "cracked")):
-        return 0.75, "partial"
-    if "building" in tags or "structure" in tags:
-        return 0.6, "minimal"
-    # Reject photos with no visible structure
-    if not any(t in tags for t in ("building", "wall", "structure", "road", "bridge")):
-        return 0.1, None
-    return 0.5, None
+    level = content.get("damage_level", "unclear")
+    return {
+        "confidence":           float(content.get("confidence", 0.0)),
+        "suggested_level":      level if level in ("minimal", "partial", "complete") else None,
+        "summary":              content.get("summary"),
+        "debris_confirmed":     content.get("debris_visible"),
+        "infrastructure_visible": content.get("infrastructure_visible", True),
+        "rejection_reason":     content.get("rejection_reason"),
+    }
 
 
 def _submitter_hash(raw_id: str) -> str:
@@ -190,10 +233,12 @@ def process_report(
         if lat and lon:
             building_id = resolve_building_id(lon, lat)
 
-    # Step 7 — AI Vision damage confidence score
-    ai_confidence, ai_suggested_level = (0.0, None)
+    # Step 7 — GPT-4o vision damage assessment
+    _ai_null = {"confidence": 0.0, "suggested_level": None, "summary": None,
+                "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
+    ai_result = _ai_null
     if photo_bytes:
-        ai_confidence, ai_suggested_level = _ai_vision_score(photo_bytes)
+        ai_result = _ai_vision_score(photo_bytes)
 
     # Step 8 — translate description to English
     desc_original = submission.description or ""
@@ -226,8 +271,11 @@ def process_report(
             "description_original": desc_original or None,
             "description_original_lang": desc_lang if desc_original else None,
             "description_en": desc_en if desc_original else None,
-            "ai_vision_confidence": ai_confidence,
-            "ai_vision_suggested_level": ai_suggested_level,
+            "ai_vision_confidence":      ai_result["confidence"],
+            "ai_vision_suggested_level": ai_result["suggested_level"],
+            "ai_vision_summary":         ai_result["summary"],
+            "ai_vision_debris_confirmed": ai_result["debris_confirmed"],
+            "ai_vision_rejection_reason": ai_result["rejection_reason"],
         },
         "location": {
             "type": "Point",

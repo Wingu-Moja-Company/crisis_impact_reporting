@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
-const WS_URL   = import.meta.env.VITE_WS_URL ?? null; // null = no WS server yet
+const API_BASE      = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const WS_URL        = import.meta.env.VITE_WS_URL ?? null;
+const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
+
+function apiHeaders(): HeadersInit {
+  return EXPORT_API_KEY ? { "X-API-Key": EXPORT_API_KEY } : {};
+}
 
 export interface LiveReport {
   report_id: string;
@@ -15,6 +20,8 @@ export interface LiveReport {
   description_en: string | null;
   requires_debris_clearing: boolean;
   ai_vision_confidence: number | null;
+  ai_vision_summary: string | null;
+  ai_vision_debris_confirmed: boolean | null;
   what3words: string | null;
   location_description: string | null;
   building_footprint_matched: boolean;
@@ -38,7 +45,9 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
     channel:                  String(p.channel ?? ""),
     description_en:           (p.description_en as string) ?? null,
     requires_debris_clearing: Boolean(p.requires_debris_clearing),
-    ai_vision_confidence:     (p.ai_vision_confidence as number) ?? null,
+    ai_vision_confidence:      (p.ai_vision_confidence as number) ?? null,
+    ai_vision_summary:         (p.ai_vision_summary as string) ?? null,
+    ai_vision_debris_confirmed: p.ai_vision_debris_confirmed != null ? Boolean(p.ai_vision_debris_confirmed) : null,
     what3words:               (p.what3words as string) ?? null,
     location_description:     (p.location_description as string) ?? null,
     building_footprint_matched: Boolean(p.building_footprint_matched),
@@ -59,7 +68,8 @@ export function useLiveReports(crisisEventId: string) {
     async function load() {
       try {
         const res = await fetch(
-          `${API_BASE}/v1/reports?crisis_event_id=${encodeURIComponent(crisisEventId)}&format=geojson&limit=500`
+          `${API_BASE}/v1/reports?crisis_event_id=${encodeURIComponent(crisisEventId)}&format=geojson&limit=500`,
+          { headers: apiHeaders() },
         );
         if (!res.ok) return;
         const geojson: GeoJSON.FeatureCollection = await res.json();

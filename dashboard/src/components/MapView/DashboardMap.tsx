@@ -87,6 +87,10 @@ function reportPopup(r: LiveReport): string {
   const descHtml = r.description_en
     ? `<div class="pp-desc">${esc(r.description_en)}</div>` : "";
 
+  // AI summary — prefer GPT-4o summary; fall back to nothing
+  const aiHtml = r.ai_vision_summary
+    ? `<div class="pp-ai">🤖 ${esc(r.ai_vision_summary)}</div>` : "";
+
   return `
     <div class="report-popup">
       <div class="pp-header pp-header--${r.damage_level}">
@@ -101,6 +105,7 @@ function reportPopup(r: LiveReport): string {
         <div class="pp-row">${chanIcon} ${esc(r.channel)} · ${tier}</div>
         ${locationHtml}
       </div>
+      ${aiHtml}
       ${descHtml}
       <div class="pp-id">${esc(r.report_id)}</div>
     </div>
@@ -264,7 +269,12 @@ export function DashboardMap({
           color: #444; font-size: 12px; margin-bottom: 6px; }
         .pp-row { display: flex; align-items: flex-start; gap: 4px; text-transform: capitalize; }
 
-        /* Description */
+        /* AI summary */
+        .pp-ai { font-size: 11px; color: #1a56db; background: #eff6ff;
+          border: 1px solid #bfdbfe; border-radius: 4px;
+          padding: 4px 8px; margin-top: 4px; }
+
+        /* Reporter description */
         .pp-desc { font-size: 12px; color: #333; border-top: 1px solid #eee;
           padding-top: 6px; margin-top: 4px; font-style: italic; }
 
