@@ -9,43 +9,15 @@ permissions:
   contents: read
 
 jobs:
-  deploy-infrastructure:
-    name: Deploy Azure infrastructure (Bicep)
-    runs-on: ubuntu-latest
-    environment: production
-    outputs:
-      botFunctionAppName:      ${{ steps.bicep.outputs.botFunctionAppName }}
-      pipelineFunctionAppName: ${{ steps.bicep.outputs.pipelineFunctionAppName }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Deploy Bicep
-        id: bicep
-        uses: azure/arm-deploy@v2
-        with:
-          resourceGroupName: rg-crisis-platform-prod
-          template: infrastructure/main.bicep
-          parameters: infrastructure/parameters/prod.parameters.json
-          failOnStdErr: false
-
   deploy-functions:
     name: Deploy Azure Functions
-    needs: deploy-infrastructure
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -54,25 +26,16 @@ jobs:
           tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy bot function app
-        uses: azure/functions-action@v1
-        with:
-          app-name:    ${{ needs.deploy-infrastructure.outputs.botFunctionAppName }}
-          package:     bot
-          scm-do-build-during-deployment: true
-
       - name: Deploy pipeline function app
         uses: azure/functions-action@v1
         with:
-          app-name:    ${{ needs.deploy-infrastructure.outputs.pipelineFunctionAppName }}
+          app-name:    func-crisis-pipeline-ob7ravt3zfbzi
           package:     functions
           scm-do-build-during-deployment: true
 
   deploy-pwa:
     name: Deploy PWA to Azure Static Web Apps
-    needs: deploy-infrastructure
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -80,9 +43,9 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: pwa/package.json
+          cache-dependency-path: pwa/package-lock.json
 
-      - run: npm install
+      - run: npm ci
         working-directory: pwa
 
       - run: npm run build
@@ -102,9 +65,7 @@ jobs:
 
   deploy-dashboard:
     name: Deploy Dashboard to Azure Static Web Apps
-    needs: deploy-infrastructure
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -112,16 +73,15 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: dashboard/package.json
+          cache-dependency-path: dashboard/package-lock.json
 
-      - run: npm install
+      - run: npm ci
         working-directory: dashboard
 
       - run: npm run build
         working-directory: dashboard
         env:
           VITE_API_BASE_URL:    ${{ secrets.API_BASE_URL }}
-          VITE_WS_URL:          ${{ secrets.WS_URL }}
           VITE_CRISIS_EVENT_ID: ${{ secrets.CRISIS_EVENT_ID }}
 
       - name: Deploy Dashboard
@@ -137,13 +97,12 @@ jobs:
     name: Post-deploy smoke test
     needs: [deploy-functions, deploy-pwa, deploy-dashboard]
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - run: pip install requests
 
