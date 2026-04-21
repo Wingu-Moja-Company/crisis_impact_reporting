@@ -17,8 +17,8 @@ from telegram.ext import (
     filters,
 )
 
-from bot.handlers import confirm, form, location, photo, start
-from bot.utils import get_secret
+from handlers import confirm, form, location, photo, start
+from utils import get_secret
 
 _app: Application | None = None
 

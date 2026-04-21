@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from bot.i18n.strings import t
-from bot.keyboards import damage_level
+from i18n.strings import t
+from keyboards import damage_level
 
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

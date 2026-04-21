@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from bot.i18n.strings import t
-from bot.utils import detect_un_language
+from i18n.strings import t
+from utils import detect_un_language
 
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

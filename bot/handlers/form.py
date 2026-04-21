@@ -8,8 +8,8 @@ State machine via context.user_data["step"]:
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from bot.i18n.strings import t
-from bot.keyboards import infra_type, crisis_type
+from i18n.strings import t
+from keyboards import infra_type, crisis_type
 
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -59,5 +59,5 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     elif data.startswith("debris:"):
         context.user_data["requires_debris_clearing"] = data.split(":")[1] == "yes"
-        from bot.handlers import confirm
+        from handlers import confirm
         await confirm.submit(query, context)

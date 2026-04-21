@@ -1,5 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.i18n.strings import t
+from i18n.strings import t
 
 _TYPES = [
     ("crisis_earthquake",   "earthquake"),

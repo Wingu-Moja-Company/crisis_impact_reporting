@@ -5,7 +5,7 @@ import urllib.request
 from telegram import CallbackQuery
 from telegram.ext import ContextTypes
 
-from bot.i18n.strings import t
+from i18n.strings import t
 
 
 API_BASE = os.environ.get("API_BASE_URL", "http://localhost:7071/api")
