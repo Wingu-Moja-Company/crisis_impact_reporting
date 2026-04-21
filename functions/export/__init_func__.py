@@ -11,6 +11,7 @@ GET /api/v1/crisis-events/{id}/stats
 import hmac
 import json
 import os
+import re
 import azure.functions as func
 
 from export.geojson import export_geojson
@@ -23,6 +24,17 @@ _UNAUTHORIZED = func.HttpResponse(
 )
 
 _MAX_LIMIT = 5_000  # hard cap on result set size
+
+# Matches any character that is NOT alphanumeric, hyphen, underscore, or dot.
+# Used to sanitise strings embedded in Content-Disposition headers so a
+# crafted crisis_event_id cannot inject extra headers or break quoting.
+_SAFE_FILENAME_RE = re.compile(r"[^\w.\-]")
+
+
+def _safe_filename(name: str, max_len: int = 64) -> str:
+    """Return a filename-safe version of *name* (ASCII printable, no quotes/CR/LF)."""
+    sanitised = _SAFE_FILENAME_RE.sub("_", name)
+    return sanitised[:max_len] or "export"
 
 
 def _check_api_key(req: func.HttpRequest) -> func.HttpResponse | None:
@@ -66,14 +78,16 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
     if fmt == "csv":
         from export.csv_export import export_csv
         body = export_csv(crisis_event_id, bbox, dmg, infra, since, limit, offset)
+        safe = _safe_filename(crisis_event_id)
         return func.HttpResponse(body, mimetype="text/csv",
-                                 headers={"Content-Disposition": f'attachment; filename="{crisis_event_id}.csv"'})
+                                 headers={"Content-Disposition": f"attachment; filename=\"{safe}.csv\""})
 
     if fmt == "shapefile":
         from export.shapefile import export_shapefile
         body = export_shapefile(crisis_event_id, bbox, dmg, infra, since, limit, offset)
+        safe = _safe_filename(crisis_event_id)
         return func.HttpResponse(body, mimetype="application/zip",
-                                 headers={"Content-Disposition": f'attachment; filename="{crisis_event_id}.zip"'})
+                                 headers={"Content-Disposition": f"attachment; filename=\"{safe}.zip\""})
 
     # Default: GeoJSON
     collection = export_geojson(crisis_event_id, bbox, dmg, infra, since, limit, offset)

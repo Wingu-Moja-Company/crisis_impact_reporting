@@ -276,9 +276,12 @@ def _resolve_w3w(address: str) -> tuple[float | None, float | None]:
     key = os.environ.get("W3W_API_KEY", "")
     if not key:
         return None, None
-    url = f"https://api.what3words.com/v3/convert-to-coordinates?words={address}&key={key}"
+    # Key sent as a request header, NOT a query parameter, so it never
+    # appears in server/proxy access logs or browser history.
+    url = f"https://api.what3words.com/v3/convert-to-coordinates?words={address}"
+    req = urllib.request.Request(url, headers={"X-Api-Key": key})
     try:
-        with urllib.request.urlopen(url, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
         coords = data.get("coordinates", {})
         return coords.get("lat"), coords.get("lng")
