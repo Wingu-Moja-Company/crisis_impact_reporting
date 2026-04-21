@@ -108,6 +108,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Wait for functions to warm up
+        run: sleep 60
+
       - name: Run smoke tests
         run: python tests/e2e/smoke_test.py --env prod --crisis-id ${{ secrets.CRISIS_EVENT_ID }}
         env:
