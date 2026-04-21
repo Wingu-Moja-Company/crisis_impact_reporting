@@ -57,3 +57,7 @@ Thumbs.db
 .coverage
 htmlcov/
 coverage.xml
+
+# TypeScript compiled JS output co-located with source
+pwa/src/**/*.js
+dashboard/src/**/*.js
