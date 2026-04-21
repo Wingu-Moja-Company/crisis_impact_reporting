@@ -17,12 +17,31 @@ export function ExportPanel({ crisisEventId }: Props) {
     );
   }
 
-  function download(format: "geojson" | "csv" | "shapefile") {
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  async function download(format: "geojson" | "csv" | "shapefile") {
     const url = buildExportUrl(crisisEventId, format, filters());
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${crisisEventId}.${format === "shapefile" ? "zip" : format}`;
-    a.click();
+    setDownloading(format);
+    try {
+      // Fetch via JS so the response is same-origin as a blob: URL.
+      // Direct cross-origin <a download> links are silently ignored by browsers.
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${crisisEventId}.${format === "shapefile" ? "zip" : format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert(`Export failed: ${err}`);
+    } finally {
+      setDownloading(null);
+    }
   }
 
   return (
@@ -60,9 +79,15 @@ export function ExportPanel({ crisisEventId }: Props) {
       </div>
 
       <div className="export-buttons">
-        <button onClick={() => download("geojson")}>Download GeoJSON</button>
-        <button onClick={() => download("csv")}>Download CSV</button>
-        <button onClick={() => download("shapefile")}>Download Shapefile</button>
+        <button onClick={() => download("geojson")} disabled={!!downloading}>
+          {downloading === "geojson" ? "Downloading…" : "⬇ GeoJSON (QGIS / ArcGIS)"}
+        </button>
+        <button onClick={() => download("csv")} disabled={!!downloading}>
+          {downloading === "csv" ? "Downloading…" : "⬇ CSV (Excel / Sheets)"}
+        </button>
+        <button onClick={() => download("shapefile")} disabled={!!downloading}>
+          {downloading === "shapefile" ? "Downloading…" : "⬇ Shapefile (.zip)"}
+        </button>
       </div>
     </div>
   );
