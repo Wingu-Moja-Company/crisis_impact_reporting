@@ -1,15 +1,18 @@
 import json
+import logging
 import os
 import urllib.request
+import urllib.error
 
 from telegram import CallbackQuery
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
 
+logger = logging.getLogger(__name__)
+
 
 def _api_base() -> str:
-    """Read at call time so env var changes after import are picked up."""
     return os.environ.get("API_BASE_URL", "http://localhost:7071/api")
 
 
@@ -22,39 +25,69 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
     # Download photo bytes from Telegram
     photo_bytes = None
     if file_id := ud.get("photo_file_id"):
-        file = await context.bot.get_file(file_id)
-        photo_bytes = await file.download_as_bytearray()
+        try:
+            file = await context.bot.get_file(file_id)
+            photo_bytes = await file.download_as_bytearray()
+        except Exception as exc:
+            logger.warning("Photo download failed (non-fatal): %s", exc)
+            photo_bytes = None  # proceed without photo
 
-    crisis_event_id = os.environ.get("CRISIS_EVENT_ID", "unknown")
+    crisis_event_id = os.environ.get("CRISIS_EVENT_ID", "ke-flood-dev")
+
+    # Use .get() with fallbacks so a missing key doesn't silently crash
+    damage_level = ud.get("damage_level")
+    crisis_nature = ud.get("crisis_nature")
+
+    if not damage_level or not crisis_nature:
+        logger.error("user_data missing required fields. ud keys: %s", list(ud.keys()))
+        await query.edit_message_text(
+            "Session expired — please start again with /start."
+        )
+        return
 
     payload = {
-        "damage_level":            ud["damage_level"],
-        "infrastructure_types":    json.dumps(list(ud.get("infra_selected", []))),
-        "crisis_nature":           ud["crisis_nature"],
+        "damage_level":             damage_level,
+        "infrastructure_types":     json.dumps(list(ud.get("infra_selected", []))),
+        "crisis_nature":            crisis_nature,
         "requires_debris_clearing": str(ud.get("requires_debris_clearing", False)).lower(),
-        "crisis_event_id":         crisis_event_id,
-        "channel":                 "telegram",
+        "crisis_event_id":          crisis_event_id,
+        "channel":                  "telegram",
+        "modular_fields":           "{}",
     }
     if lat := ud.get("gps_lat"):
         payload["gps_lat"] = str(lat)
-        payload["gps_lon"] = str(ud["gps_lon"])
+        payload["gps_lon"] = str(ud.get("gps_lon", ""))
     if w3w := ud.get("what3words"):
         payload["what3words_address"] = w3w
     if desc := ud.get("location_description"):
         payload["location_description"] = desc
 
+    logger.info("Submitting to %s — payload keys: %s", _api_base(), list(payload.keys()))
+
     try:
         result = _post_report(payload, photo_bytes, str(query.from_user.id))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode()[:200]
+        logger.error("API HTTP %s: %s", exc.code, body)
+        await query.edit_message_text(
+            f"⚠️ Submission failed (HTTP {exc.code}). Please try /start again.\n\nDetail: {body}"
+        )
+        return
     except Exception as exc:
-        await query.edit_message_text(t("error_generic", lang))
-        return  # don't re-raise — keeps the function returning 200 to Telegram
+        logger.error("API call failed: %s", exc, exc_info=True)
+        await query.edit_message_text(
+            f"⚠️ Submission failed: {exc}\n\nPlease try /start again."
+        )
+        return
 
     report_id = result.get("report_id", "unknown")
     map_url = result.get("map_url", "")
-    msg = t("confirm", lang, report_id=report_id, map_url=map_url) if map_url else t("confirm_no_url", lang, report_id=report_id)
+    if map_url:
+        msg = t("confirm", lang, report_id=report_id, map_url=map_url)
+    else:
+        msg = t("confirm_no_url", lang, report_id=report_id)
     await query.edit_message_text(msg)
 
-    # Notify of any badges earned (returned separately by the API in prod)
     for badge in result.get("badges_awarded", []):
         await context.bot.send_message(
             chat_id=query.message.chat_id,
@@ -65,9 +98,6 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def _post_report(fields: dict, photo_bytes: bytes | None, submitter_id: str) -> dict:
-    import io
-    import email.mime.multipart
-
     boundary = "----CrisisBot"
     body_parts = []
 
