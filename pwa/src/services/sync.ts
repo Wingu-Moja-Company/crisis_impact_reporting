@@ -1,4 +1,4 @@
-import { localDB, getQueuedReports, type OfflineReport } from "./pouchdb";
+import { getQueuedReports, updateReport, type OfflineReport } from "./pouchdb";
 import { submitReport } from "./api";
 
 let _syncing = false;
@@ -18,15 +18,12 @@ export async function syncQueuedReports(): Promise<void> {
 }
 
 async function _syncOne(doc: OfflineReport): Promise<void> {
-  await localDB.put({ ...doc, status: "syncing" });
+  await updateReport({ ...doc, status: "syncing" });
   try {
-    await submitReport(
-      doc.report_data as Record<string, string>,
-      doc.photo_base64
-    );
-    await localDB.put({ ...doc, status: "synced" });
+    await submitReport(doc.report_data as Record<string, string>, doc.photo_base64);
+    await updateReport({ ...doc, status: "synced" });
   } catch (err) {
-    await localDB.put({
+    await updateReport({
       ...doc,
       status: "failed",
       sync_attempts: doc.sync_attempts + 1,
@@ -41,7 +38,6 @@ export function registerBackgroundSync(): void {
     syncQueuedReports();
   });
 
-  // Attempt sync on load in case we came back online between sessions
   if (navigator.onLine) {
     syncQueuedReports();
   }

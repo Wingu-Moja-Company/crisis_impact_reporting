@@ -9,7 +9,7 @@ import fiona
 from fiona.crs import from_epsg
 from shapely.geometry import Point, mapping
 
-from functions.export.geojson import export_geojson
+from export.geojson import export_geojson
 
 SCHEMA = {
     "geometry": "Point",

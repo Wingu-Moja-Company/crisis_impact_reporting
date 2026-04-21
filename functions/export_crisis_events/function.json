@@ -6,8 +6,8 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": ["post"],
-      "route": "v1/reports"
+      "methods": ["get"],
+      "route": "v1/crisis-events"
     },
     {
       "type": "http",

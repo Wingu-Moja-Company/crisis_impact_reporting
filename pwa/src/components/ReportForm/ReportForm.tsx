@@ -69,7 +69,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         syncQueuedReports();
       }
     } catch {
-      // Network failed mid-flight — save offline
       const id = await enqueueReport(fields, photo);
       setResult({ reportId: id, offline: true });
     } finally {
@@ -80,11 +79,18 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   if (result) {
     return (
       <div className="report-success">
-        <p>
-          {result.offline
-            ? t("confirmation.saved_offline")
-            : t("confirmation.success", { report_id: result.reportId })}
-        </p>
+        <div className="success-icon">✓</div>
+        <div>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: ".3rem" }}>
+            {result.offline ? "Saved offline" : "Report submitted"}
+          </h2>
+          <p style={{ fontSize: ".88rem", color: "var(--grey-500)" }}>
+            {result.offline
+              ? "Will sync automatically when you're back online"
+              : "Your report is now being processed"}
+          </p>
+        </div>
+        <span className="success-id">{result.reportId}</span>
         <button onClick={() => setResult(null)}>Submit another report</button>
       </div>
     );
@@ -92,80 +98,114 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
   return (
     <form className="report-form" onSubmit={handleSubmit}>
+
       {/* Photo */}
-      <section>
-        <label className="photo-upload">
-          {photo
-            ? <img src={photo} alt="preview" className="photo-preview" />
-            : <span>{t("form.photo_prompt")}</span>}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} hidden />
-        </label>
-        <button type="button" onClick={() => fileRef.current?.click()}>
-          {t("form.photo_prompt")}
-        </button>
-      </section>
+      <div className="form-card">
+        <span className="form-card-label">Photo evidence</span>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} hidden />
+        {photo ? (
+          <>
+            <img src={photo} alt="preview" className="photo-preview" />
+            <button type="button" className="photo-change-btn" onClick={() => fileRef.current?.click()}>
+              Change photo
+            </button>
+          </>
+        ) : (
+          <div className="photo-upload-area" onClick={() => fileRef.current?.click()}>
+            <span className="photo-upload-icon">📷</span>
+            <span>{t("form.photo_prompt")}</span>
+            <span style={{ fontSize: ".75rem", color: "var(--grey-300)" }}>JPG, PNG, HEIC</span>
+          </div>
+        )}
+      </div>
 
       {/* Location */}
-      <section>
-        <p>{t("form.location_prompt")}</p>
-        <button type="button" onClick={requestGps} disabled={gpsLoading}>
-          {gpsLoading ? "…" : "📍 Use my GPS location"}
-        </button>
-        {coords && <p>✓ GPS: {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}</p>}
-        <input
-          type="text"
-          placeholder={t("form.what3words_placeholder")}
-          value={what3words}
-          onChange={(e) => setWhat3words(e.target.value)}
-        />
-      </section>
+      <div className="form-card">
+        <span className="form-card-label">Location</span>
+        <div className="location-card">
+          <button type="button" className="gps-btn" onClick={requestGps} disabled={gpsLoading}>
+            <span>📍</span>
+            {gpsLoading ? "Getting location…" : "Use my GPS location"}
+          </button>
+          {coords && (
+            <div className="gps-confirmed">
+              ✓ {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}
+            </div>
+          )}
+          <div className="divider-or">or</div>
+          <input
+            className="w3w-input"
+            type="text"
+            placeholder={t("form.what3words_placeholder")}
+            value={what3words}
+            onChange={(e) => setWhat3words(e.target.value)}
+          />
+        </div>
+      </div>
 
       {/* Damage level */}
-      <DamageSelector value={damageLevel} onChange={setDamageLevel} />
+      <div className="form-card">
+        <span className="form-card-label">Level of damage</span>
+        <DamageSelector value={damageLevel} onChange={setDamageLevel} />
+      </div>
 
       {/* Infrastructure type */}
-      <InfraTypeSelector selected={infraTypes} onChange={setInfraTypes} />
+      <div className="form-card">
+        <span className="form-card-label">Type of infrastructure</span>
+        <InfraTypeSelector selected={infraTypes} onChange={setInfraTypes} />
+      </div>
 
       {/* Crisis nature */}
-      <section>
-        <label>
-          {t("form.crisis_nature")}
-          <select value={crisisNature} onChange={(e) => setCrisisNature(e.target.value)} required>
-            <option value="">—</option>
-            {CRISIS_NATURES.map((n) => (
-              <option key={n} value={n}>{n.replace("_", " ")}</option>
-            ))}
-          </select>
-        </label>
-      </section>
+      <div className="form-card">
+        <span className="form-card-label">Nature of crisis</span>
+        <select
+          className="crisis-select"
+          value={crisisNature}
+          onChange={(e) => setCrisisNature(e.target.value)}
+          required
+        >
+          <option value="">Select crisis type…</option>
+          {CRISIS_NATURES.map((n) => (
+            <option key={n} value={n}>{n.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Debris */}
-      <section>
-        <p>{t("form.debris")}</p>
-        <label>
-          <input type="radio" name="debris" onChange={() => setDebrisRequired(true)} /> {t("form.submit") === "Submit report" ? "Yes" : "✓"}
-        </label>
-        <label>
-          <input type="radio" name="debris" onChange={() => setDebrisRequired(false)} /> No
-        </label>
-      </section>
+      <div className="form-card">
+        <span className="form-card-label">Debris clearing required?</span>
+        <div className="debris-options">
+          <label className={`debris-option yes ${debrisRequired === true ? "selected" : ""}`}>
+            <input type="radio" name="debris" onChange={() => setDebrisRequired(true)} />
+            ⚠️ Yes, required
+          </label>
+          <label className={`debris-option no ${debrisRequired === false ? "selected" : ""}`}>
+            <input type="radio" name="debris" onChange={() => setDebrisRequired(false)} />
+            ✓ Not needed
+          </label>
+        </div>
+      </div>
 
       {/* Description */}
-      <section>
+      <div className="form-card">
+        <span className="form-card-label">Additional details <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></span>
         <textarea
-          placeholder={t("form.description")}
+          className="description-textarea"
+          placeholder="Describe what you see — people trapped, hazards, access routes…"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
         />
-      </section>
+      </div>
 
       <button
         type="submit"
+        className="submit-btn"
         disabled={submitting || !damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null}
       >
-        {submitting ? t("form.submitting") : t("form.submit")}
+        {submitting ? "Submitting…" : "Submit damage report →"}
       </button>
+
     </form>
   );
 }

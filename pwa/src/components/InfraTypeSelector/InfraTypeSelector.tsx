@@ -25,17 +25,19 @@ export function InfraTypeSelector({ selected, onChange }: Props) {
   return (
     <fieldset className="infra-selector">
       <legend>{t("form.infra_type")}</legend>
-      {TYPES.map((type) => (
-        <label key={type} className={`infra-option ${selected.includes(type) ? "selected" : ""}`}>
-          <input
-            type="checkbox"
-            value={type}
-            checked={selected.includes(type)}
-            onChange={() => toggle(type)}
-          />
-          {t(`form.infra_${type}`)}
-        </label>
-      ))}
+      <div className="infra-options-grid">
+        {TYPES.map((type) => (
+          <label key={type} className={`infra-option ${selected.includes(type) ? "selected" : ""}`}>
+            <input
+              type="checkbox"
+              value={type}
+              checked={selected.includes(type)}
+              onChange={() => toggle(type)}
+            />
+            {t(`form.infra_${type}`)}
+          </label>
+        ))}
+      </div>
     </fieldset>
   );
 }

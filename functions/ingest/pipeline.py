@@ -16,10 +16,10 @@ from azure.cosmos import CosmosClient
 from azure.storage.blob import BlobServiceClient
 from PIL import Image
 
-from functions.buildings.footprint_query import resolve_building_id
-from functions.ingest.dedup import is_duplicate
-from functions.ingest.schema import DamageReportSubmission
-from functions.ingest.translate import detect_and_translate
+from buildings.footprint_query import resolve_building_id
+from ingest.dedup import is_duplicate
+from ingest.schema import DamageReportSubmission
+from ingest.translate import detect_and_translate
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +121,7 @@ def _submitter_hash(raw_id: str) -> str:
 
 def _award_badges(submitter_hash: str, crisis_event_id: str) -> None:
     """Delegate badge evaluation to the engagement module (imported lazily)."""
-    from functions.engagement.badges import evaluate_badges
+    from engagement.badges import evaluate_badges
     evaluate_badges(submitter_hash, crisis_event_id)
 
 

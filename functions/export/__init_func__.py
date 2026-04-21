@@ -12,10 +12,8 @@ import json
 import os
 import azure.functions as func
 
-from functions.export.geojson import export_geojson
-from functions.export.csv_export import export_csv
-from functions.export.shapefile import export_shapefile
-from functions.export.cap_feed import build_cap_feed
+from export.geojson import export_geojson
+from export.cap_feed import build_cap_feed
 
 
 def _parse_bbox(raw: str | None):
@@ -39,11 +37,13 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
     offset     = int(req.params.get("offset", "0"))
 
     if fmt == "csv":
+        from export.csv_export import export_csv
         body = export_csv(crisis_event_id, bbox, dmg, infra, since, limit, offset)
         return func.HttpResponse(body, mimetype="text/csv",
                                  headers={"Content-Disposition": f'attachment; filename="{crisis_event_id}.csv"'})
 
     if fmt == "shapefile":
+        from export.shapefile import export_shapefile
         body = export_shapefile(crisis_event_id, bbox, dmg, infra, since, limit, offset)
         return func.HttpResponse(body, mimetype="application/zip",
                                  headers={"Content-Disposition": f'attachment; filename="{crisis_event_id}.zip"'})
@@ -92,13 +92,14 @@ def crisis_event_stats(req: func.HttpRequest) -> func.HttpResponse:
         enable_cross_partition_query=True,
     )), 0)
 
-    by_level = {}
-    for row in db.get_container_client("reports").query_items(
-        "SELECT c.damage.level AS lvl, COUNT(1) AS cnt FROM c WHERE c.crisis_event_id = @cid GROUP BY c.damage.level",
+    by_level: dict[str, int] = {}
+    for doc in db.get_container_client("reports").query_items(
+        "SELECT c.damage.level AS lvl FROM c WHERE c.crisis_event_id = @cid",
         parameters=[{"name": "@cid", "value": crisis_event_id}],
         enable_cross_partition_query=True,
     ):
-        by_level[row["lvl"]] = row["cnt"]
+        lvl = doc.get("lvl") or "unknown"
+        by_level[lvl] = by_level.get(lvl, 0) + 1
 
     return func.HttpResponse(
         json.dumps({"crisis_event_id": crisis_event_id, "total_reports": total, "by_damage_level": by_level}),

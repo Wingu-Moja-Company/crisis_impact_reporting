@@ -6,8 +6,8 @@ Accepts multipart/form-data with report fields + optional photo.
 import json
 import azure.functions as func
 
-from functions.ingest.schema import DamageReportSubmission
-from functions.ingest.pipeline import process_report
+from ingest.schema import DamageReportSubmission
+from ingest.pipeline import process_report
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:

@@ -1,8 +1,15 @@
 """Export damage reports as CSV (for spreadsheet analysis and IFRC GO)."""
 
+import csv
 import io
-import pandas as pd
-from functions.export.geojson import export_geojson
+from export.geojson import export_geojson
+
+FIELDS = [
+    "report_id", "crisis_event_id", "building_id", "submitted_at", "channel",
+    "damage_level", "infrastructure_types", "crisis_nature",
+    "requires_debris_clearing", "description_en", "ai_vision_confidence",
+    "latitude", "longitude",
+]
 
 
 def export_csv(
@@ -18,27 +25,27 @@ def export_csv(
         crisis_event_id, bbox, damage_level, infra_type, since, limit, offset
     )
 
-    rows = []
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=FIELDS)
+    writer.writeheader()
+
     for feature in collection["features"]:
         props = feature["properties"]
-        lon, lat = feature["geometry"]["coordinates"]
-        rows.append({
-            "report_id":               props["report_id"],
-            "crisis_event_id":         props["crisis_event_id"],
+        coords = feature.get("geometry", {}).get("coordinates") or [None, None]
+        writer.writerow({
+            "report_id":               props.get("report_id"),
+            "crisis_event_id":         props.get("crisis_event_id"),
             "building_id":             props.get("building_id"),
-            "submitted_at":            props["submitted_at"],
-            "channel":                 props["channel"],
-            "damage_level":            props["damage_level"],
+            "submitted_at":            props.get("submitted_at"),
+            "channel":                 props.get("channel"),
+            "damage_level":            props.get("damage_level"),
             "infrastructure_types":    ",".join(props.get("infrastructure_types") or []),
-            "crisis_nature":           props["crisis_nature"],
-            "requires_debris_clearing": props["requires_debris_clearing"],
+            "crisis_nature":           props.get("crisis_nature"),
+            "requires_debris_clearing": props.get("requires_debris_clearing"),
             "description_en":          props.get("description_en"),
             "ai_vision_confidence":    props.get("ai_vision_confidence"),
-            "latitude":                lat,
-            "longitude":               lon,
+            "latitude":                coords[1],
+            "longitude":               coords[0],
         })
 
-    df = pd.DataFrame(rows)
-    buf = io.StringIO()
-    df.to_csv(buf, index=False)
     return buf.getvalue()

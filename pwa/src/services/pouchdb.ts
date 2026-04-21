@@ -1,13 +1,7 @@
-import PouchDB from "pouchdb";
-import PouchDBFind from "pouchdb-find";
-
-PouchDB.plugin(PouchDBFind);
-
-export const localDB = new PouchDB("crisis-reports");
+import { openDB, type IDBPDatabase } from "idb";
 
 export interface OfflineReport {
-  _id: string;
-  _rev?: string;
+  id: string;
   status: "queued" | "syncing" | "synced" | "failed";
   created_at: string;
   report_data: Record<string, unknown>;
@@ -17,13 +11,35 @@ export interface OfflineReport {
   error_message?: string;
 }
 
+type CrisisDB = {
+  reports: {
+    key: string;
+    value: OfflineReport;
+    indexes: { by_status: string };
+  };
+};
+
+let _db: IDBPDatabase<CrisisDB> | null = null;
+
+async function getDB(): Promise<IDBPDatabase<CrisisDB>> {
+  if (_db) return _db;
+  _db = await openDB<CrisisDB>("crisis-reports", 1, {
+    upgrade(db) {
+      const store = db.createObjectStore("reports", { keyPath: "id" });
+      store.createIndex("by_status", "status");
+    },
+  });
+  return _db;
+}
+
 export async function enqueueReport(
   reportData: Record<string, unknown>,
   photoBase64: string | null
 ): Promise<string> {
+  const db = await getDB();
   const id = `report_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  await localDB.put<OfflineReport>({
-    _id: id,
+  await db.put("reports", {
+    id,
     status: "queued",
     created_at: new Date().toISOString(),
     report_data: reportData,
@@ -35,13 +51,20 @@ export async function enqueueReport(
 }
 
 export async function getQueuedReports(): Promise<OfflineReport[]> {
-  const result = await localDB.find({ selector: { status: "queued" } });
-  return result.docs as unknown as OfflineReport[];
+  const db = await getDB();
+  return db.getAllFromIndex("reports", "by_status", "queued");
+}
+
+export async function updateReport(report: OfflineReport): Promise<void> {
+  const db = await getDB();
+  await db.put("reports", report);
 }
 
 export async function getQueueCount(): Promise<number> {
-  const result = await localDB.find({
-    selector: { status: { $in: ["queued", "syncing"] } },
-  });
-  return result.docs.length;
+  const db = await getDB();
+  const [queued, syncing] = await Promise.all([
+    db.countFromIndex("reports", "by_status", "queued"),
+    db.countFromIndex("reports", "by_status", "syncing"),
+  ]);
+  return queued + syncing;
 }
