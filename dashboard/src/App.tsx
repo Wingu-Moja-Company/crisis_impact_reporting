@@ -13,11 +13,22 @@ const MAP_CENTER: [number, number] = [-1.2577, 36.8614]; // Nairobi default
 type View = "map" | "heatmap";
 
 export default function App() {
-  const [view, setView] = useState<View>("map");
+  const [view, setView]                     = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
-  const [showExport, setShowExport] = useState(false);
+  const [selectedReport, setSelectedReport]     = useState<string | null>(null);
+  const [showExport, setShowExport]             = useState(false);
 
   const { reports: liveReports, connected } = useLiveReports(CRISIS_EVENT_ID);
+
+  function handleReportSelect(reportId: string) {
+    setSelectedReport(reportId);
+    setView("map"); // switch to map view if on heatmap
+  }
+
+  function handleBuildingSelect(buildingId: string) {
+    setSelectedBuilding(buildingId);
+    setSelectedReport(null);
+  }
 
   return (
     <div className="dashboard">
@@ -39,7 +50,11 @@ export default function App() {
 
       <div className="dashboard-body">
         <aside className="sidebar">
-          <IncidentFeed reports={liveReports} onSelect={setSelectedBuilding} />
+          <IncidentFeed
+            reports={liveReports}
+            selectedReportId={selectedReport}
+            onSelect={handleReportSelect}
+          />
         </aside>
 
         <main className="map-container">
@@ -48,7 +63,8 @@ export default function App() {
               center={MAP_CENTER}
               liveReports={liveReports}
               selectedBuildingId={selectedBuilding}
-              onBuildingSelect={setSelectedBuilding}
+              selectedReportId={selectedReport}
+              onBuildingSelect={handleBuildingSelect}
             />
           ) : (
             <CoverageHeatmap crisisEventId={CRISIS_EVENT_ID} center={MAP_CENTER} />

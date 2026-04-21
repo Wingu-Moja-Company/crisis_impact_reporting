@@ -2,7 +2,8 @@ import type { LiveReport } from "../../hooks/useLiveReports";
 
 interface Props {
   reports: LiveReport[];
-  onSelect: (buildingId: string) => void;
+  selectedReportId: string | null;
+  onSelect: (reportId: string) => void;
 }
 
 const DAMAGE_COLORS: Record<string, string> = {
@@ -19,7 +20,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export function IncidentFeed({ reports, onSelect }: Props) {
+export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
   if (reports.length === 0) {
     return (
       <div className="feed-empty">
@@ -33,9 +34,9 @@ export function IncidentFeed({ reports, onSelect }: Props) {
       {reports.map((r) => (
         <li
           key={r.report_id}
-          className="feed-item"
+          className={`feed-item${r.report_id === selectedReportId ? " feed-item--selected" : ""}`}
           style={{ borderLeft: `4px solid ${DAMAGE_COLORS[r.damage_level] ?? "#888"}` }}
-          onClick={() => r.building_id && onSelect(r.building_id)}
+          onClick={() => onSelect(r.report_id)}
         >
           <div className="feed-row">
             <span className="feed-level">{r.damage_level}</span>

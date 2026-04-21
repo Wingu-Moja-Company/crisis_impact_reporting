@@ -17,6 +17,7 @@ interface Props {
   footprints?: BuildingFeature[];
   liveReports: LiveReport[];
   selectedBuildingId: string | null;
+  selectedReportId: string | null;
   onBuildingSelect: (id: string) => void;
 }
 
@@ -27,12 +28,10 @@ const DAMAGE_COLORS: Record<string, string> = {
   unknown:  "#888780",
 };
 
-const DAMAGE_RADIUS: Record<string, number> = {
-  minimal:  6,
-  partial:  9,
-  complete: 12,
-  unknown:  6,
-};
+function markerRadius(level: string, selected: boolean) {
+  const base = level === "complete" ? 12 : level === "partial" ? 9 : 6;
+  return selected ? base + 5 : base;
+}
 
 function reportPopup(r: LiveReport): string {
   const infra = r.infrastructure_types?.join(", ") || "—";
@@ -54,29 +53,30 @@ function reportPopup(r: LiveReport): string {
 }
 
 export function DashboardMap({
-  center, zoom = 13, footprints, liveReports, selectedBuildingId, onBuildingSelect,
+  center, zoom = 13, footprints, liveReports,
+  selectedBuildingId, selectedReportId, onBuildingSelect,
 }: Props) {
   const containerRef   = useRef<HTMLDivElement>(null);
   const mapRef         = useRef<L.Map | null>(null);
   const footprintLayer = useRef<L.GeoJSON | null>(null);
   const reportLayer    = useRef<L.LayerGroup | null>(null);
+  // report_id → circleMarker, so we can highlight / open popup on selection
+  const markerIndex    = useRef<Map<string, L.CircleMarker>>(new Map());
+  const initialFit     = useRef(false);
 
   // ── Initialise map once ────────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
     mapRef.current = L.map(containerRef.current).setView(center, zoom);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
       maxZoom: 19,
     }).addTo(mapRef.current);
-
     reportLayer.current = L.layerGroup().addTo(mapRef.current);
-
     return () => { mapRef.current?.remove(); mapRef.current = null; };
   }, []);
 
-  // ── Re-render footprint polygons when selection changes ────────────────────
+  // ── Footprint polygons ────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !footprints) return;
     footprintLayer.current?.remove();
@@ -97,34 +97,71 @@ export function DashboardMap({
     ).addTo(mapRef.current);
   }, [footprints, selectedBuildingId]);
 
-  // ── Re-render ALL report markers whenever the list changes ─────────────────
+  // ── Rebuild all report markers when the list changes ─────────────────────
   useEffect(() => {
     if (!mapRef.current || !reportLayer.current) return;
 
     reportLayer.current.clearLayers();
+    markerIndex.current.clear();
 
     const withCoords = liveReports.filter((r) => r.coordinates !== null);
     if (withCoords.length === 0) return;
 
     for (const r of withCoords) {
       const [lon, lat] = r.coordinates!;
-      L.circleMarker([lat, lon], {
-        radius:      DAMAGE_RADIUS[r.damage_level] ?? 6,
-        color:       DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
+      const isSelected = r.report_id === selectedReportId;
+      const marker = L.circleMarker([lat, lon], {
+        radius:      markerRadius(r.damage_level, isSelected),
+        color:       isSelected ? "#fff" : DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
         fillColor:   DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
-        fillOpacity: 0.75,
-        weight:      1.5,
+        fillOpacity: isSelected ? 1 : 0.75,
+        weight:      isSelected ? 3 : 1.5,
       })
         .bindPopup(reportPopup(r), { maxWidth: 260 })
-        .addTo(reportLayer.current);
+        .addTo(reportLayer.current!);
+
+      markerIndex.current.set(r.report_id, marker);
     }
 
-    // Auto-fit map bounds to all report markers on first load
-    if (withCoords.length > 0 && mapRef.current.getZoom() === zoom) {
+    // Auto-fit bounds on first load only
+    if (!initialFit.current) {
       const latlngs = withCoords.map((r) => [r.coordinates![1], r.coordinates![0]] as [number, number]);
       mapRef.current.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 14 });
+      initialFit.current = true;
     }
   }, [liveReports]);
+
+  // ── React to selection change: fly to marker + open popup ─────────────────
+  useEffect(() => {
+    if (!mapRef.current || !selectedReportId) return;
+
+    const marker = markerIndex.current.get(selectedReportId);
+    if (!marker) return;
+
+    const report = liveReports.find((r) => r.report_id === selectedReportId);
+
+    // Re-style all markers: highlight selected, dim others
+    for (const [id, m] of markerIndex.current) {
+      const r = liveReports.find((x) => x.report_id === id);
+      const sel = id === selectedReportId;
+      m.setStyle({
+        radius:      markerRadius(r?.damage_level ?? "unknown", sel),
+        color:       sel ? "#fff" : DAMAGE_COLORS[r?.damage_level ?? "unknown"],
+        fillColor:   DAMAGE_COLORS[r?.damage_level ?? "unknown"],
+        fillOpacity: sel ? 1 : 0.35,
+        weight:      sel ? 3 : 1,
+      });
+      // CircleMarker doesn't inherit setRadius via setStyle — set directly
+      (m as L.CircleMarker).setRadius(markerRadius(r?.damage_level ?? "unknown", sel));
+    }
+
+    // Fly to and open popup
+    if (report?.coordinates) {
+      const [lon, lat] = report.coordinates;
+      mapRef.current.flyTo([lat, lon], Math.max(mapRef.current.getZoom(), 15), { duration: 0.8 });
+    }
+    marker.openPopup();
+  }, [selectedReportId]);
 
   return (
     <>

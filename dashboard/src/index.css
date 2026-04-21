@@ -154,6 +154,11 @@ body {
 
 .feed-item:hover { background: var(--grey-50); }
 
+.feed-item--selected {
+  background: #fffbeb;
+  box-shadow: inset 3px 0 0 #BA7517;
+}
+
 .feed-level {
   font-weight: 700;
   font-size: .82rem;
