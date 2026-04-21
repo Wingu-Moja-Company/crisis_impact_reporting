@@ -6,6 +6,7 @@ import { InfraTypeSelector, type InfraType } from "../InfraTypeSelector/InfraTyp
 import { enqueueReport } from "../../services/pouchdb";
 import { submitReport } from "../../services/api";
 import { syncQueuedReports } from "../../services/sync";
+import { geocodeLocation, type GeocodeResult } from "../../services/geocode";
 
 const CRISIS_NATURES = [
   "earthquake", "flood", "tsunami", "hurricane", "wildfire",
@@ -27,9 +28,18 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   const [crisisNature, setCrisisNature] = useState("");
   const [debrisRequired, setDebrisRequired] = useState<boolean | null>(null);
   const [description, setDescription] = useState("");
-  const [what3words, setWhat3words] = useState("");
+
+  // Location state
+  const [locationText, setLocationText] = useState("");
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
+  const [geocodeFailed, setGeocodeFailed] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<{ reportId: string; offline: boolean } | null>(null);
+  const [retrying, setRetrying] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -40,22 +50,42 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     reader.readAsDataURL(file);
   }
 
+  async function handleLocationBlur() {
+    // If GPS is already confirmed, no need to geocode
+    if (coords || !locationText.trim()) return;
+    setGeocoding(true);
+    setGeocodeResult(null);
+    setGeocodeFailed(false);
+    const res = await geocodeLocation(locationText);
+    setGeocoding(false);
+    if (res) {
+      setGeocodeResult(res);
+    } else {
+      setGeocodeFailed(true);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null) return;
 
     setSubmitting(true);
+    setSubmitError(null);
+
+    // Resolve coordinates: GPS > geocoded text > none
+    const finalLat = coords?.lat ?? geocodeResult?.lat;
+    const finalLon = coords?.lon ?? geocodeResult?.lon;
 
     const fields: Record<string, string> = {
-      damage_level: damageLevel,
-      infrastructure_types: JSON.stringify(infraTypes),
-      crisis_nature: crisisNature,
+      damage_level:             damageLevel,
+      infrastructure_types:     JSON.stringify(infraTypes),
+      crisis_nature:            crisisNature,
       requires_debris_clearing: String(debrisRequired),
-      crisis_event_id: crisisEventId,
-      channel: "pwa",
-      ...(description && { description }),
-      ...(coords && { gps_lat: String(coords.lat), gps_lon: String(coords.lon) }),
-      ...(what3words && { what3words_address: what3words }),
+      crisis_event_id:          crisisEventId,
+      channel:                  "pwa",
+      ...(description    && { description }),
+      ...(finalLat != null && { gps_lat: String(finalLat), gps_lon: String(finalLon) }),
+      ...(locationText   && { location_description: locationText }),
     };
 
     try {
@@ -68,7 +98,10 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         setResult({ reportId: id, offline: true });
         syncQueuedReports();
       }
-    } catch {
+    } catch (err) {
+      // Online but submission failed — queue locally and surface the error
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setSubmitError(errMsg);
       const id = await enqueueReport(fields, photo);
       setResult({ reportId: id, offline: true });
     } finally {
@@ -76,21 +109,47 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     }
   }
 
+  async function handleRetry() {
+    setRetrying(true);
+    await syncQueuedReports();
+    setRetrying(false);
+    setResult(null); // return to form so user can try again if still failing
+  }
+
   if (result) {
     return (
       <div className="report-success">
-        <div className="success-icon">✓</div>
+        <div className="success-icon">{result.offline ? "⏳" : "✓"}</div>
         <div>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: ".3rem" }}>
-            {result.offline ? "Saved offline" : "Report submitted"}
+            {result.offline ? "Queued for upload" : "Report submitted"}
           </h2>
           <p style={{ fontSize: ".88rem", color: "var(--grey-500)" }}>
             {result.offline
-              ? "Will sync automatically when you're back online"
+              ? "Couldn't reach the server right now — tap Retry or it will sync automatically."
               : "Your report is now being processed"}
           </p>
+          {submitError && (
+            <p style={{
+              fontSize: ".78rem", color: "#b91c1c", marginTop: ".5rem",
+              background: "#fef2f2", padding: ".4rem .6rem", borderRadius: "4px",
+            }}>
+              Error: {submitError}
+            </p>
+          )}
         </div>
         <span className="success-id">{result.reportId}</span>
+        {result.offline && (
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            style={{ background: "var(--blue)", color: "#fff", border: "none",
+              borderRadius: "8px", padding: ".6rem 1.2rem", fontWeight: 700,
+              fontSize: ".9rem", cursor: "pointer", marginBottom: ".5rem" }}
+          >
+            {retrying ? "Retrying…" : "Retry now"}
+          </button>
+        )}
         <button onClick={() => setResult(null)}>Submit another report</button>
       </div>
     );
@@ -121,25 +180,50 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Location */}
       <div className="form-card">
-        <span className="form-card-label">Location</span>
+        <span className="form-card-label">Location of damage</span>
         <div className="location-card">
+          {/* GPS button */}
           <button type="button" className="gps-btn" onClick={requestGps} disabled={gpsLoading}>
             <span>📍</span>
             {gpsLoading ? "Getting location…" : "Use my GPS location"}
           </button>
           {coords && (
             <div className="gps-confirmed">
-              ✓ {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}
+              ✓ GPS confirmed ({coords.lat.toFixed(4)}, {coords.lon.toFixed(4)})
             </div>
           )}
-          <div className="divider-or">or</div>
-          <input
-            className="w3w-input"
-            type="text"
-            placeholder={t("form.what3words_placeholder")}
-            value={what3words}
-            onChange={(e) => setWhat3words(e.target.value)}
-          />
+
+          {/* Text location with geocoding */}
+          {!coords && (
+            <>
+              <div className="divider-or">or type an address / landmark</div>
+              <input
+                className="w3w-input"
+                type="text"
+                placeholder="e.g. Near Westlands Market, Kibera Road..."
+                value={locationText}
+                onChange={(e) => {
+                  setLocationText(e.target.value);
+                  setGeocodeResult(null);
+                  setGeocodeFailed(false);
+                }}
+                onBlur={handleLocationBlur}
+              />
+              {geocoding && (
+                <div className="geocode-status geocode-searching">🔍 Looking up location…</div>
+              )}
+              {geocodeResult && (
+                <div className="geocode-status geocode-found">
+                  📍 Located: {geocodeResult.displayName}
+                </div>
+              )}
+              {geocodeFailed && locationText.trim() && (
+                <div className="geocode-status geocode-not-found">
+                  ℹ️ Location not found on map — will be saved as a description
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -188,7 +272,10 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Description */}
       <div className="form-card">
-        <span className="form-card-label">Additional details <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></span>
+        <span className="form-card-label">
+          Additional details{" "}
+          <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+        </span>
         <textarea
           className="description-textarea"
           placeholder="Describe what you see — people trapped, hazards, access routes…"

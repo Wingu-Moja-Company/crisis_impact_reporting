@@ -261,6 +261,17 @@ main {
 
 .w3w-input::placeholder { color: var(--grey-300); }
 
+/* Geocoding feedback */
+.geocode-status {
+  font-size: .8rem;
+  padding: .35rem .6rem;
+  border-radius: 6px;
+  margin-top: -.2rem;
+}
+.geocode-searching  { color: var(--grey-600); background: var(--grey-50); }
+.geocode-found      { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.geocode-not-found  { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; }
+
 .divider-or {
   display: flex;
   align-items: center;
