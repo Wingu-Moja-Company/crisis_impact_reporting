@@ -11,6 +11,15 @@ import { useLiveReports } from "./hooks/useLiveReports";
 const DEFAULT_CRISIS_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
 const MAP_CENTER: [number, number] = [-1.2577, 36.8614]; // Nairobi default
 
+/** URL param ?crisis_event_id= takes priority, so the page survives refresh. */
+function getCrisisIdFromUrl(): string {
+  try {
+    const param = new URLSearchParams(window.location.search).get("crisis_event_id");
+    if (param?.trim()) return param.trim();
+  } catch { /* ignore */ }
+  return DEFAULT_CRISIS_ID;
+}
+
 type View = "map" | "heatmap";
 
 /** Read ?report= from the URL on first load so Telegram links auto-select. */
@@ -23,7 +32,7 @@ function getReportFromUrl(): string | null {
 }
 
 export default function App() {
-  const [crisisEventId, setCrisisEventId]       = useState(DEFAULT_CRISIS_ID);
+  const [crisisEventId, setCrisisEventId]       = useState(getCrisisIdFromUrl);
   const [view, setView]                         = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [selectedReport, setSelectedReport]     = useState<string | null>(getReportFromUrl);
@@ -49,6 +58,10 @@ export default function App() {
     setSelectedBuilding(null);
     setSelectedReport(null);
     setShowExport(false);
+    // Persist to URL so refresh lands on the same crisis
+    const url = new URL(window.location.href);
+    url.searchParams.set("crisis_event_id", id);
+    window.history.pushState({}, "", url.toString());
   }
 
   return (
