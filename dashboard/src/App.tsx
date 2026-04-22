@@ -40,7 +40,7 @@ export default function App() {
   const [showAdmin, setShowAdmin]               = useState(false);
   const [drawerOpen, setDrawerOpen]             = useState(false);
 
-  const { reports: liveReports, connected } = useLiveReports(crisisEventId);
+  const { reports: liveReports, connected, lastFetched } = useLiveReports(crisisEventId);
 
   function handleReportSelect(reportId: string) {
     setSelectedReport(reportId);
@@ -87,6 +87,7 @@ export default function App() {
         crisisEventId={crisisEventId}
         liveCount={liveReports.length}
         wsConnected={connected}
+        lastFetched={lastFetched}
       />
 
       <div className="dashboard-body">

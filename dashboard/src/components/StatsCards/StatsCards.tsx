@@ -1,9 +1,32 @@
+import { useState, useEffect } from "react";
 import { useStats } from "../../hooks/useStats";
+
+const POLL_INTERVAL_S = 30;
 
 interface Props {
   crisisEventId: string;
   liveCount: number;
   wsConnected: boolean;
+  lastFetched: number | null;
+}
+
+function PollCountdown({ lastFetched }: { lastFetched: number | null }) {
+  const [secs, setSecs] = useState<number>(POLL_INTERVAL_S);
+
+  useEffect(() => {
+    if (lastFetched === null) return;
+    // Recalculate immediately when lastFetched changes
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - lastFetched) / 1000);
+      setSecs(Math.max(0, POLL_INTERVAL_S - elapsed));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastFetched]);
+
+  if (lastFetched === null) return <span className="poll-countdown">—</span>;
+  return <span className="poll-countdown" title="Seconds until next refresh">↻ {secs}s</span>;
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -12,7 +35,7 @@ const LEVEL_COLORS: Record<string, string> = {
   complete: "#E24B4A",
 };
 
-export function StatsCards({ crisisEventId, liveCount, wsConnected }: Props) {
+export function StatsCards({ crisisEventId, liveCount, wsConnected, lastFetched }: Props) {
   const stats = useStats(crisisEventId);
 
   return (
@@ -32,8 +55,11 @@ export function StatsCards({ crisisEventId, liveCount, wsConnected }: Props) {
       <div className="stat-card">
         <span className="stat-value">{liveCount}</span>
         <span className="stat-label">
-          Live feed{" "}
-          <span className={`ws-dot ${wsConnected ? "connected" : "disconnected"}`} title={wsConnected ? "Connected" : "Disconnected"} />
+          {wsConnected ? (
+            <>Live feed <span className="ws-dot connected" title="WebSocket connected" /></>
+          ) : (
+            <>Polling <PollCountdown lastFetched={lastFetched} /></>
+          )}
         </span>
       </div>
     </div>

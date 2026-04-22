@@ -115,6 +115,13 @@ body {
 .ws-dot.connected    { background: var(--green); }
 .ws-dot.disconnected { background: var(--grey-400); }
 
+.poll-countdown {
+  font-size: .72rem;
+  color: var(--grey-400);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .2px;
+}
+
 /* ── Main body ── */
 .dashboard-body {
   display: grid;

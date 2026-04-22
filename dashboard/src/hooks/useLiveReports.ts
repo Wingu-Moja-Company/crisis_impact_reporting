@@ -68,6 +68,7 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
 export function useLiveReports(crisisEventId: string) {
   const [reports, setReports] = useState<LiveReport[]>([]);
   const [connected, setConnected] = useState(false);
+  const [lastFetched, setLastFetched] = useState<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   // ── Initial REST fetch + 30-second polling ───────────────────────────────
@@ -88,6 +89,7 @@ export function useLiveReports(crisisEventId: string) {
         // Replace only if counts differ or when WS isn't keeping things live.
         // Sort newest-first so the feed always shows the latest at top.
         setReports(loaded.sort((a, b) => b.submitted_at.localeCompare(a.submitted_at)));
+        setLastFetched(Date.now());
       } catch {
         // non-critical — map still works, just empty
       }
@@ -119,5 +121,5 @@ export function useLiveReports(crisisEventId: string) {
     return () => { ws.close(); wsRef.current = null; };
   }, [crisisEventId]);
 
-  return { reports, connected };
+  return { reports, connected, lastFetched };
 }
