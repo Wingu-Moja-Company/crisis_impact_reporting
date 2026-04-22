@@ -4,11 +4,13 @@ Steps run sequentially; any unhandled exception propagates to the Azure
 Functions HTTP trigger which returns a 500 to the caller.
 """
 
+import base64
 import hashlib
 import io
 import json
 import os
 import time
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 
@@ -124,8 +126,6 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
     plain-English summary, and debris flag.
     Falls back gracefully if the service is unavailable.
     """
-    import base64
-
     endpoint = os.environ.get("AOAI_ENDPOINT", "").rstrip("/")
     key      = os.environ.get("AOAI_KEY", "")
     deploy   = os.environ.get("AOAI_DEPLOYMENT", "gpt-5.4-mini")
@@ -320,7 +320,6 @@ def process_report(
 # ---------------------------------------------------------------------------
 
 def _resolve_w3w(address: str) -> tuple[float | None, float | None]:
-    import urllib.request
     key = os.environ.get("W3W_API_KEY", "")
     if not key:
         return None, None
