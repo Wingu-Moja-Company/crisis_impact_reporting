@@ -5,9 +5,10 @@ import { IncidentFeed } from "./components/IncidentFeed/IncidentFeed";
 import { BuildingHistory } from "./components/BuildingHistory/BuildingHistory";
 import { ExportPanel } from "./components/ExportPanel/ExportPanel";
 import { StatsCards } from "./components/StatsCards/StatsCards";
+import { AdminPanel } from "./components/AdminPanel/AdminPanel";
 import { useLiveReports } from "./hooks/useLiveReports";
 
-const CRISIS_EVENT_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
+const DEFAULT_CRISIS_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
 const MAP_CENTER: [number, number] = [-1.2577, 36.8614]; // Nairobi default
 
 type View = "map" | "heatmap";
@@ -22,18 +23,20 @@ function getReportFromUrl(): string | null {
 }
 
 export default function App() {
+  const [crisisEventId, setCrisisEventId]       = useState(DEFAULT_CRISIS_ID);
   const [view, setView]                         = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [selectedReport, setSelectedReport]     = useState<string | null>(getReportFromUrl);
   const [showExport, setShowExport]             = useState(false);
+  const [showAdmin, setShowAdmin]               = useState(false);
   const [drawerOpen, setDrawerOpen]             = useState(false);
 
-  const { reports: liveReports, connected } = useLiveReports(CRISIS_EVENT_ID);
+  const { reports: liveReports, connected } = useLiveReports(crisisEventId);
 
   function handleReportSelect(reportId: string) {
     setSelectedReport(reportId);
     setView("map");
-    setDrawerOpen(false); // close drawer after selecting on mobile
+    setDrawerOpen(false);
   }
 
   function handleBuildingSelect(buildingId: string) {
@@ -41,32 +44,44 @@ export default function App() {
     setSelectedReport(null);
   }
 
+  function handleSwitchCrisis(id: string) {
+    setCrisisEventId(id);
+    setSelectedBuilding(null);
+    setSelectedReport(null);
+    setShowExport(false);
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Crisis Damage Dashboard</h1>
-        <span className="crisis-id">{CRISIS_EVENT_ID}</span>
+        <span className="crisis-id">{crisisEventId}</span>
         <nav>
           <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>Map</button>
           <button className={view === "heatmap" ? "active" : ""} onClick={() => setView("heatmap")}>Coverage</button>
           <button onClick={() => setShowExport((s) => !s)}>Export</button>
+          <button
+            className="admin-btn"
+            onClick={() => setShowAdmin(true)}
+            title="Admin — manage crisis events"
+          >
+            ⚙️
+          </button>
         </nav>
       </header>
 
       <StatsCards
-        crisisEventId={CRISIS_EVENT_ID}
+        crisisEventId={crisisEventId}
         liveCount={liveReports.length}
         wsConnected={connected}
       />
 
       <div className="dashboard-body">
-        {/* Backdrop — tapping closes the drawer on mobile */}
         {drawerOpen && (
           <div className="sidebar-backdrop" onClick={() => setDrawerOpen(false)} />
         )}
 
         <aside className={`sidebar${drawerOpen ? " sidebar--open" : ""}`}>
-          {/* Drag handle / close button visible only on mobile */}
           <div className="sidebar-handle">
             <span className="sidebar-handle-label">
               Reports ({liveReports.length})
@@ -95,10 +110,9 @@ export default function App() {
               onBuildingSelect={handleBuildingSelect}
             />
           ) : (
-            <CoverageHeatmap crisisEventId={CRISIS_EVENT_ID} center={MAP_CENTER} />
+            <CoverageHeatmap crisisEventId={crisisEventId} center={MAP_CENTER} />
           )}
 
-          {/* Floating feed toggle — mobile only */}
           <button
             className="feed-fab"
             onClick={() => setDrawerOpen((o) => !o)}
@@ -116,7 +130,15 @@ export default function App() {
         )}
       </div>
 
-      {showExport && <ExportPanel crisisEventId={CRISIS_EVENT_ID} />}
+      {showExport && <ExportPanel crisisEventId={crisisEventId} />}
+
+      {showAdmin && (
+        <AdminPanel
+          onClose={() => setShowAdmin(false)}
+          onSwitchCrisis={handleSwitchCrisis}
+          activeCrisisId={crisisEventId}
+        />
+      )}
     </div>
   );
 }
