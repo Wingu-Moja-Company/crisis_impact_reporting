@@ -128,7 +128,7 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
 
     endpoint = os.environ.get("AOAI_ENDPOINT", "").rstrip("/")
     key      = os.environ.get("AOAI_KEY", "")
-    deploy   = os.environ.get("AOAI_DEPLOYMENT", "gpt-4.5-mini")
+    deploy   = os.environ.get("AOAI_DEPLOYMENT", "gpt-5.4-mini")
 
     _null = {"confidence": 0.0, "suggested_level": None, "summary": None,
              "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
