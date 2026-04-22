@@ -148,7 +148,7 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
                 }},
             ],
         }],
-        "max_tokens": 200,
+        "max_completion_tokens": 200,
         "response_format": {"type": "json_object"},
     }).encode()
 
