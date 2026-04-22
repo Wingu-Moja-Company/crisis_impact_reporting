@@ -20,8 +20,12 @@ export interface LiveReport {
   description_en: string | null;
   requires_debris_clearing: boolean;
   ai_vision_confidence: number | null;
+  ai_vision_suggested_level: string | null;
   ai_vision_summary: string | null;
   ai_vision_debris_confirmed: boolean | null;
+  ai_vision_access_status: string | null;
+  ai_vision_hazard_indicators: string[];
+  ai_vision_intervention_priority: string | null;
   what3words: string | null;
   location_description: string | null;
   building_footprint_matched: boolean;
@@ -45,9 +49,13 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
     channel:                  String(p.channel ?? ""),
     description_en:           (p.description_en as string) ?? null,
     requires_debris_clearing: Boolean(p.requires_debris_clearing),
-    ai_vision_confidence:      (p.ai_vision_confidence as number) ?? null,
-    ai_vision_summary:         (p.ai_vision_summary as string) ?? null,
-    ai_vision_debris_confirmed: p.ai_vision_debris_confirmed != null ? Boolean(p.ai_vision_debris_confirmed) : null,
+    ai_vision_confidence:             (p.ai_vision_confidence as number) ?? null,
+    ai_vision_suggested_level:        (p.ai_vision_suggested_level as string) ?? null,
+    ai_vision_summary:                (p.ai_vision_summary as string) ?? null,
+    ai_vision_debris_confirmed:       p.ai_vision_debris_confirmed != null ? Boolean(p.ai_vision_debris_confirmed) : null,
+    ai_vision_access_status:          (p.ai_vision_access_status as string) ?? null,
+    ai_vision_hazard_indicators:      (p.ai_vision_hazard_indicators as string[]) ?? [],
+    ai_vision_intervention_priority:  (p.ai_vision_intervention_priority as string) ?? null,
     what3words:               (p.what3words as string) ?? null,
     location_description:     (p.location_description as string) ?? null,
     building_footprint_matched: Boolean(p.building_footprint_matched),

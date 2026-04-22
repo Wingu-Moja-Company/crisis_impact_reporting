@@ -87,9 +87,77 @@ function reportPopup(r: LiveReport): string {
   const descHtml = r.description_en
     ? `<div class="pp-desc">${esc(r.description_en)}</div>` : "";
 
-  // AI summary — prefer GPT-4o summary; fall back to nothing
-  const aiHtml = r.ai_vision_summary
-    ? `<div class="pp-ai">🤖 ${esc(r.ai_vision_summary)}</div>` : "";
+  // AI assessment card — only shown when the model returned a result
+  const hasAi = r.ai_vision_confidence != null && r.ai_vision_confidence > 0;
+  const aiHtml = (() => {
+    if (!hasAi) return "";
+
+    const pct  = Math.round((r.ai_vision_confidence ?? 0) * 100);
+
+    // Damage level agreement
+    const aiLevel = r.ai_vision_suggested_level;
+    const levelMatch = aiLevel && aiLevel === r.damage_level;
+    const levelLabel = aiLevel
+      ? `${aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1)} damage`
+      : null;
+    const levelRow = levelLabel
+      ? `<div class="pp-ai-row">${levelMatch
+          ? `<span class="pp-ai-badge pp-ai-match">✓ AI agrees: ${esc(levelLabel)}</span>`
+          : `<span class="pp-ai-badge pp-ai-diff">⚡ AI suggests: ${esc(levelLabel)}</span>`
+        }</div>`
+      : "";
+
+    // Access status
+    const ACCESS_ICON: Record<string, string> = {
+      clear: "🟢", limited: "🟡", blocked: "🔴", unknown: "⚪",
+    };
+    const accessRow = r.ai_vision_access_status
+      ? `<div class="pp-ai-row">${ACCESS_ICON[r.ai_vision_access_status] ?? "⚪"} Access: <strong>${esc(r.ai_vision_access_status)}</strong></div>`
+      : "";
+
+    // Hazard indicators
+    const HAZARD_LABEL: Record<string, string> = {
+      structural_collapse_risk:   "Collapse risk",
+      fire_damage:                "Fire damage",
+      flood_damage:               "Flood damage",
+      debris_blocking_access:     "Debris blocking access",
+      exposed_hazardous_materials:"Hazardous materials",
+      road_damage:                "Road damage",
+    };
+    const hazards = (r.ai_vision_hazard_indicators ?? [])
+      .map((h) => HAZARD_LABEL[h] ?? h)
+      .join(" · ");
+    const hazardRow = hazards
+      ? `<div class="pp-ai-row pp-ai-hazard">⚠️ ${esc(hazards)}</div>`
+      : "";
+
+    // Intervention priority
+    const PRIORITY_CLASS: Record<string, string> = {
+      low: "pp-pri-low", medium: "pp-pri-med", high: "pp-pri-high", critical: "pp-pri-crit",
+    };
+    const PRIORITY_LABEL: Record<string, string> = {
+      low: "Low priority", medium: "Medium priority",
+      high: "High — respond within 48 h", critical: "Critical — immediate response",
+    };
+    const pri = r.ai_vision_intervention_priority;
+    const priorityRow = pri
+      ? `<div class="pp-ai-row"><span class="pp-priority ${PRIORITY_CLASS[pri] ?? ""}">${esc(PRIORITY_LABEL[pri] ?? pri)}</span></div>`
+      : "";
+
+    // Summary
+    const summaryRow = r.ai_vision_summary
+      ? `<div class="pp-ai-summary">"${esc(r.ai_vision_summary)}"</div>`
+      : "";
+
+    return `
+      <div class="pp-ai-card">
+        <div class="pp-ai-header">
+          <span class="pp-ai-title">🤖 AI Assessment</span>
+          <span class="pp-ai-conf">${pct}% confident</span>
+        </div>
+        ${levelRow}${accessRow}${hazardRow}${priorityRow}${summaryRow}
+      </div>`;
+  })();
 
   return `
     <div class="report-popup">
@@ -269,10 +337,29 @@ export function DashboardMap({
           color: #444; font-size: 12px; margin-bottom: 6px; }
         .pp-row { display: flex; align-items: flex-start; gap: 4px; text-transform: capitalize; }
 
-        /* AI summary */
-        .pp-ai { font-size: 11px; color: #1a56db; background: #eff6ff;
-          border: 1px solid #bfdbfe; border-radius: 4px;
-          padding: 4px 8px; margin-top: 4px; }
+        /* AI assessment card */
+        .pp-ai-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px;
+          padding: 6px 8px; margin-top: 6px; font-size: 11px; color: #1e3a5f; }
+        .pp-ai-header { display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 5px; }
+        .pp-ai-title { font-weight: 700; color: #1a56db; font-size: 11px; }
+        .pp-ai-conf { font-size: 10px; color: #6b7280; background: #dbeafe;
+          padding: 1px 5px; border-radius: 10px; }
+        .pp-ai-row { margin: 3px 0; font-size: 11px; }
+        .pp-ai-badge { display: inline-block; padding: 1px 6px; border-radius: 10px;
+          font-size: 10px; font-weight: 600; }
+        .pp-ai-match { background: #dcfce7; color: #166534; }
+        .pp-ai-diff  { background: #fef9c3; color: #854d0e; }
+        .pp-ai-hazard { color: #92400e; font-weight: 500; }
+        .pp-ai-summary { font-style: italic; color: #374151; margin-top: 5px;
+          padding-top: 4px; border-top: 1px solid #bfdbfe; font-size: 11px; }
+        /* Intervention priority badges */
+        .pp-priority { display: inline-block; padding: 1px 7px; border-radius: 10px;
+          font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+        .pp-pri-low  { background: #dcfce7; color: #166534; }
+        .pp-pri-med  { background: #fef9c3; color: #854d0e; }
+        .pp-pri-high { background: #ffedd5; color: #9a3412; }
+        .pp-pri-crit { background: #fee2e2; color: #7f1d1d; }
 
         /* Reporter description */
         .pp-desc { font-size: 12px; color: #333; border-top: 1px solid #eee;

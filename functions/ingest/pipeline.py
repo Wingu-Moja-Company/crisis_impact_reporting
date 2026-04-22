@@ -107,7 +107,10 @@ Assess the structural damage visible and respond with JSON only — no explanati
   "infrastructure_visible": true,
   "debris_visible": false,
   "rejection_reason": null,
-  "summary": "One sentence max 20 words for field responders"
+  "summary": "One sentence max 20 words for field responders",
+  "access_status": "clear|limited|blocked|unknown",
+  "hazard_indicators": [],
+  "intervention_priority": "low|medium|high|critical"
 }
 
 Damage level guide:
@@ -115,6 +118,22 @@ Damage level guide:
 - partial: Repairable structural damage, some elements compromised, proceed with caution
 - complete: Structurally unsafe or destroyed, must not be entered
 - unclear: Cannot determine damage level from this photo
+
+access_status guide (can responders safely reach and enter the site?):
+- clear: No visible obstructions, site appears accessible
+- limited: Partial obstruction (debris, damage) — access possible with caution
+- blocked: Access route visibly obstructed or site is unsafe to enter
+- unknown: Cannot determine from this photo
+
+hazard_indicators: array of zero or more visible safety hazards from this list only:
+  "structural_collapse_risk", "fire_damage", "flood_damage",
+  "debris_blocking_access", "exposed_hazardous_materials", "road_damage"
+
+intervention_priority (urgency for field response):
+- low: Minimal or no damage, monitoring only
+- medium: Repairable damage, address within days
+- high: Significant damage or hazards, respond within 24–48 hours
+- critical: Severe/complete damage or immediate safety risk, respond immediately
 
 Set rejection_reason to "no_structure", "too_dark", or "unrelated" if the photo is not usable.
 Set infrastructure_visible to false if no structure is clearly visible."""
@@ -132,7 +151,8 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
     deploy   = os.environ.get("AOAI_DEPLOYMENT", "gpt-5.4-mini")
 
     _null = {"confidence": 0.0, "suggested_level": None, "summary": None,
-             "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
+             "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None,
+             "access_status": None, "hazard_indicators": [], "intervention_priority": None}
 
     if not endpoint or not key:
         logging.warning("AI vision skipped: AOAI_ENDPOINT or AOAI_KEY not configured")
@@ -152,7 +172,7 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
                 }},
             ],
         }],
-        "max_completion_tokens": 200,
+        "max_completion_tokens": 400,
         "response_format": {"type": "json_object"},
     }).encode()
 
@@ -171,13 +191,23 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
         return _null
 
     level = content.get("damage_level", "unclear")
+    _valid_access   = {"clear", "limited", "blocked", "unknown"}
+    _valid_priority = {"low", "medium", "high", "critical"}
+    _valid_hazards  = {
+        "structural_collapse_risk", "fire_damage", "flood_damage",
+        "debris_blocking_access", "exposed_hazardous_materials", "road_damage",
+    }
+    raw_hazards = content.get("hazard_indicators") or []
     return {
-        "confidence":           float(content.get("confidence", 0.0)),
-        "suggested_level":      level if level in ("minimal", "partial", "complete") else None,
-        "summary":              content.get("summary"),
-        "debris_confirmed":     content.get("debris_visible"),
+        "confidence":             float(content.get("confidence", 0.0)),
+        "suggested_level":        level if level in ("minimal", "partial", "complete") else None,
+        "summary":                content.get("summary"),
+        "debris_confirmed":       content.get("debris_visible"),
         "infrastructure_visible": content.get("infrastructure_visible", True),
-        "rejection_reason":     content.get("rejection_reason"),
+        "rejection_reason":       content.get("rejection_reason"),
+        "access_status":          content.get("access_status") if content.get("access_status") in _valid_access else None,
+        "hazard_indicators":      [h for h in raw_hazards if h in _valid_hazards],
+        "intervention_priority":  content.get("intervention_priority") if content.get("intervention_priority") in _valid_priority else None,
     }
 
 
@@ -238,9 +268,10 @@ def process_report(
         if lat and lon:
             building_id = resolve_building_id(lon, lat)
 
-    # Step 7 — GPT-4o vision damage assessment
+    # Step 7 — GPT-5.4-mini vision damage assessment
     _ai_null = {"confidence": 0.0, "suggested_level": None, "summary": None,
-                "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
+                "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None,
+                "access_status": None, "hazard_indicators": [], "intervention_priority": None}
     ai_result = _ai_null
     if photo_bytes:
         ai_result = _ai_vision_score(photo_bytes)
@@ -276,11 +307,14 @@ def process_report(
             "description_original": desc_original or None,
             "description_original_lang": desc_lang if desc_original else None,
             "description_en": desc_en if desc_original else None,
-            "ai_vision_confidence":      ai_result["confidence"],
-            "ai_vision_suggested_level": ai_result["suggested_level"],
-            "ai_vision_summary":         ai_result["summary"],
-            "ai_vision_debris_confirmed": ai_result["debris_confirmed"],
-            "ai_vision_rejection_reason": ai_result["rejection_reason"],
+            "ai_vision_confidence":        ai_result["confidence"],
+            "ai_vision_suggested_level":   ai_result["suggested_level"],
+            "ai_vision_summary":           ai_result["summary"],
+            "ai_vision_debris_confirmed":  ai_result["debris_confirmed"],
+            "ai_vision_rejection_reason":  ai_result["rejection_reason"],
+            "ai_vision_access_status":     ai_result["access_status"],
+            "ai_vision_hazard_indicators": ai_result["hazard_indicators"],
+            "ai_vision_intervention_priority": ai_result["intervention_priority"],
         },
         "location": {
             "type": "Point",
