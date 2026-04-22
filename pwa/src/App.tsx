@@ -7,7 +7,16 @@ import { registerBackgroundSync } from "./services/sync";
 
 registerBackgroundSync();
 
-const CRISIS_EVENT_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
+/** URL param takes priority over build-time env, enabling one PWA to serve many crises. */
+function getCrisisEventId(): string {
+  try {
+    const param = new URLSearchParams(window.location.search).get("crisis_event_id");
+    if (param && param.trim()) return param.trim();
+  } catch { /* ignore */ }
+  return import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
+}
+
+const CRISIS_EVENT_ID = getCrisisEventId();
 
 export default function App() {
   const { t } = useTranslation();
