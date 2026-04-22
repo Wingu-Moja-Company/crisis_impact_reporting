@@ -40,15 +40,22 @@ def _safe_filename(name: str, max_len: int = 64) -> str:
 def _check_api_key(req: func.HttpRequest) -> func.HttpResponse | None:
     """
     Validate the X-API-Key header against EXPORT_API_KEY env var.
+    ADMIN_API_KEY is also accepted as a super-key (admins have full export access).
     Returns a 401 response if invalid; None if the request is authorised.
     When EXPORT_API_KEY is not set the check is skipped (open / dev mode).
     """
-    expected = os.environ.get("EXPORT_API_KEY", "")
-    if not expected:
+    export_key = os.environ.get("EXPORT_API_KEY", "")
+    admin_key  = os.environ.get("ADMIN_API_KEY", "")
+    if not export_key and not admin_key:
         return None  # Not configured — permit all (development)
-    provided = req.headers.get("X-API-Key", "")
-    if not provided or not hmac.compare_digest(provided, expected):
+    provided = req.headers.get("X-API-Key", "") or req.headers.get("X-Admin-Key", "")
+    if not provided:
         return _UNAUTHORIZED
+    if export_key and hmac.compare_digest(provided, export_key):
+        return None
+    if admin_key and hmac.compare_digest(provided, admin_key):
+        return None
+    return _UNAUTHORIZED
     return None
 
 
