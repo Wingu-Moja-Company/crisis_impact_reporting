@@ -8,6 +8,7 @@ import base64
 import hashlib
 import io
 import json
+import logging
 import os
 import time
 import urllib.request
@@ -134,8 +135,11 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
              "debris_confirmed": None, "infrastructure_visible": True, "rejection_reason": None}
 
     if not endpoint or not key:
+        logging.warning("AI vision skipped: AOAI_ENDPOINT or AOAI_KEY not configured")
         return _null
 
+    logging.info("AI vision: calling %s/openai/deployments/%s, photo=%d bytes",
+                 endpoint, deploy, len(photo_bytes))
     b64 = base64.b64encode(photo_bytes).decode()
     payload = json.dumps({
         "messages": [{
@@ -162,7 +166,8 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
         with urllib.request.urlopen(req, timeout=20) as resp:
             result = json.loads(resp.read())
         content = json.loads(result["choices"][0]["message"]["content"])
-    except Exception:
+    except Exception as exc:
+        logging.warning("AI vision scoring failed (non-fatal): %s: %s", type(exc).__name__, exc)
         return _null
 
     level = content.get("damage_level", "unclear")
