@@ -42,6 +42,22 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
   const fileRef = useRef<HTMLInputElement>(null);
 
+  function resetForm() {
+    setPhoto(null);
+    setDamageLevel(null);
+    setInfraTypes([]);
+    setCrisisNature("");
+    setDebrisRequired(null);
+    setDescription("");
+    setLocationText("");
+    setGeocodeResult(null);
+    setGeocodeFailed(false);
+    setSubmitError(null);
+    setResult(null);
+    // Reset the file input so the same photo can be re-selected if needed
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -150,7 +166,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
             {retrying ? "Retrying…" : "Retry now"}
           </button>
         )}
-        <button onClick={() => setResult(null)}>Submit another report</button>
+        <button onClick={resetForm}>Submit another report</button>
       </div>
     );
   }
