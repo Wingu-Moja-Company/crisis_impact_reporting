@@ -45,6 +45,14 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
+    modular = {}
+    if elec := ud.get("electricity_status"):
+        modular["electricity_status"] = elec
+    if health := ud.get("health_services"):
+        modular["health_services"] = health
+    if needs := ud.get("needs_selected"):
+        modular["pressing_needs"] = list(needs)
+
     payload = {
         "damage_level":             damage_level,
         "infrastructure_types":     json.dumps(list(ud.get("infra_selected", []))),
@@ -52,7 +60,7 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         "requires_debris_clearing": str(ud.get("requires_debris_clearing", False)).lower(),
         "crisis_event_id":          crisis_event_id,
         "channel":                  "telegram",
-        "modular_fields":           "{}",
+        "modular_fields":           json.dumps(modular),
     }
     if lat := ud.get("gps_lat"):
         payload["gps_lat"] = str(lat)

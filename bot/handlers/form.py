@@ -2,14 +2,14 @@
 Handles all InlineKeyboard callback queries through the damage form flow.
 
 State machine via context.user_data["step"]:
-  dmg      → infra    → crisis   → debris   → confirm
+  dmg → infra → crisis → debris → electricity → health → pressing_needs → confirm
 """
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
-from keyboards import infra_type, crisis_type
+from keyboards import infra_type, crisis_type, electricity_status, health_services, pressing_needs
 
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -59,5 +59,41 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     elif data.startswith("debris:"):
         context.user_data["requires_debris_clearing"] = data.split(":")[1] == "yes"
-        from handlers import confirm
-        await confirm.submit(query, context)
+        await query.edit_message_text(
+            t("electricity_question", lang),
+            reply_markup=electricity_status.build(lang),
+        )
+
+    elif data.startswith("elec:"):
+        context.user_data["electricity_status"] = data.split(":")[1]
+        await query.edit_message_text(
+            t("health_question", lang),
+            reply_markup=health_services.build(lang),
+        )
+
+    elif data.startswith("health:"):
+        context.user_data["health_services"] = data.split(":")[1]
+        context.user_data["needs_selected"] = set()
+        await query.edit_message_text(
+            t("pressing_needs_question", lang),
+            reply_markup=pressing_needs.build(lang),
+        )
+
+    elif data.startswith("needs:"):
+        value = data.split(":")[1]
+        selected: set[str] = context.user_data.setdefault("needs_selected", set())
+
+        if value == "done":
+            if not selected:
+                await query.answer("Select at least one need.", show_alert=True)
+                return
+            from handlers import confirm
+            await confirm.submit(query, context)
+        else:
+            if value in selected:
+                selected.discard(value)
+            else:
+                selected.add(value)
+            await query.edit_message_reply_markup(
+                reply_markup=pressing_needs.build(lang, selected),
+            )
