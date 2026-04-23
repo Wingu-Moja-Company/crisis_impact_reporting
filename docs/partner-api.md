@@ -1,6 +1,6 @@
 # Partner API Reference
 
-Base URL: `https://api.crisisplatform.io/api`
+Base URL: `https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api`
 
 Authentication is via API key in the `X-API-Key` header (partner tier) or Azure AD B2C token (admin tier). Public endpoints require no authentication.
 
@@ -55,6 +55,55 @@ GET /v1/reports
 **GeoJSON response** — `Content-Type: application/geo+json`
 
 Compatible with OCHA HDX, QGIS, and ArcGIS.
+
+---
+
+### Current building damage state (latest-per-building GeoJSON)
+
+```
+GET /v1/buildings/current
+```
+
+One GeoJSON Feature per building, showing its current (authoritative) damage state. This is the primary endpoint for map visualisation — each building appears exactly once, with the winning damage assessment after severity-bias arbitration.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `crisis_event_id` | string | **Required** |
+| `bbox` | string | `lat_min,lon_min,lat_max,lon_max` (WGS84) |
+| `damage_level` | string | `minimal` \| `partial` \| `complete` |
+
+**GeoJSON response** — `Content-Type: application/geo+json`
+
+Feature properties include: `building_id`, `current_damage_level`, `report_count`, `last_updated`, `requires_debris_clearing`, `has_photo`, `submitter_tier`.
+
+---
+
+### Area damage summary
+
+```
+GET /v1/buildings/summary
+```
+
+Aggregate counts of buildings by damage level. Returns intervention priorities for dashboard widgets and situation reports.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `crisis_event_id` | string | **Required** |
+| `bbox` | string | `lat_min,lon_min,lat_max,lon_max` (WGS84) |
+
+**Response**
+```json
+{
+  "crisis_event_id": "ke-flood-dev",
+  "total_buildings": 347,
+  "debris_clearing_required": 89,
+  "by_damage_level": [
+    { "damage_level": "complete", "count": 47, "intervention_priority": "critical" },
+    { "damage_level": "partial",  "count": 180, "intervention_priority": "high" },
+    { "damage_level": "minimal",  "count": 120, "intervention_priority": "medium" }
+  ]
+}
+```
 
 ---
 

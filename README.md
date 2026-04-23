@@ -52,7 +52,7 @@ A real-time crisis damage reporting platform enabling affected communities to su
 - Node.js 20+
 - Azure CLI (`az login`)
 - Azure Functions Core Tools v4: `npm install -g azure-functions-core-tools@4`
-- Docker Desktop (for PostGIS)
+- Azure PostgreSQL (managed, pre-provisioned with PostGIS extension)
 
 ### Quick Start
 
@@ -71,24 +71,18 @@ pip install -r functions/requirements.txt
 cd pwa && npm install && cd ..
 cd dashboard && npm install && cd ..
 
-# 4. PostGIS (Docker)
-docker run -d --name postgis \
-  -e POSTGRES_PASSWORD=localdev \
-  -p 5432:5432 \
-  postgis/postgis:16-3.4
-
-# 5. Configure environment
+# 4. Configure environment
 cp .env.example .env
 # Edit .env with dev credentials
 
-# 6. Create local crisis event
+# 5. Create local crisis event
 python scripts/create_crisis_event.py \
   --id ke-flood-dev \
   --name "Dev — Kenya Flood Test" \
   --country KE --region nairobi --crisis-nature flood \
   --schema-file schemas/flood-schema.json
 
-# 7. Start services (four terminals)
+# 6. Start services (four terminals)
 cd pwa       && npm run dev   # http://localhost:3000
 cd dashboard && npm run dev   # http://localhost:3001
 cd functions && func start    # http://localhost:7071

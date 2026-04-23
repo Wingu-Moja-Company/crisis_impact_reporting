@@ -120,20 +120,43 @@ az functionapp plan update \
 
 ## CI/CD
 
-The GitHub Actions pipeline handles all deployments automatically:
+The GitHub Actions pipeline (`Azure/static-web-apps-deploy@v1`) handles PWA and dashboard deployments automatically on push to `main`.
 
-- **`pr-checks.yml`** — runs on every PR: Python tests, PWA/dashboard build, Bicep lint
-- **`deploy-prod.yml`** — runs on push to `main`: deploys Bicep → Functions → PWA → Dashboard → smoke tests
+**Azure Functions** are deployed manually from the `functions/` directory using remote Oryx build:
+
+```bash
+cd functions
+func azure functionapp publish func-crisis-pipeline-ob7ravt3zfbzi --python
+```
+
+This triggers a remote build on Azure — no local Docker or pre-built packages required.
 
 Required GitHub secrets (set under Settings → Environments → production):
 
 | Secret | Value |
 |---|---|
-| `AZURE_CLIENT_ID` | OIDC federated credential |
-| `AZURE_TENANT_ID` | Azure AD tenant ID |
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID |
-| `SWA_DEPLOYMENT_TOKEN_PWA` | Static Web Apps token for PWA |
-| `SWA_DEPLOYMENT_TOKEN_DASHBOARD` | Static Web Apps token for dashboard |
-| `API_BASE_URL` | e.g. `https://api.crisisplatform.io/api` |
-| `WS_URL` | e.g. `wss://api.crisisplatform.io/ws` |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web Apps deployment token |
+| `VITE_API_BASE_URL` | `https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api` |
 | `CRISIS_EVENT_ID` | Active crisis event ID |
+
+### Active Resources (rg-crisis-platform-dev, West Europe)
+
+| Resource | Name |
+|---|---|
+| Function App | `func-crisis-pipeline-ob7ravt3zfbzi` |
+| Cosmos DB | database: `crisis-platform` |
+| PostgreSQL | `pg-crisis-footprints-ob7ravt3zfbzi.postgres.database.azure.com` |
+| Key Vault | `kv-crisis-ob7ravt3zfbzi` |
+
+### Working Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/v1/reports` | Ingest damage report |
+| `GET /api/v1/reports` | Export all reports (GeoJSON/CSV) |
+| `GET /api/v1/buildings/current` | Latest-per-building GeoJSON |
+| `GET /api/v1/buildings/summary` | Damage counts by level |
+| `GET /api/v1/buildings/{id}/history` | Building version history |
+| `GET /api/v1/crisis-events` | List crisis events |
+| `GET /api/v1/crisis-events/{id}/stats` | Report counts by damage level |
+| `GET /api/v1/feeds/cap/{id}.xml` | CAP 1.2 alert feed |
