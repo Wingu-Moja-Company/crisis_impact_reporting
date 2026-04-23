@@ -296,7 +296,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       {/* Electricity infrastructure */}
       <div className="form-card">
         <span className="form-card-label">Electricity infrastructure condition</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+        <div className="assessment-options">
           {[
             { value: "no_damage",  label: "No damage observed" },
             { value: "minor",      label: "Minor damage (service disruptions but quickly repairable)" },
@@ -305,15 +305,8 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
             { value: "destroyed",  label: "Completely destroyed (no electricity infrastructure functioning)" },
             { value: "unknown",    label: "Unknown/cannot be assessed" },
           ].map((opt) => (
-            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
-              <input
-                type="radio"
-                name="electricity_status"
-                value={opt.value}
-                checked={electricityStatus === opt.value}
-                onChange={() => setElectricityStatus(opt.value)}
-                style={{ marginTop: ".15rem", flexShrink: 0 }}
-              />
+            <label key={opt.value} className={`assessment-option radio-opt ${electricityStatus === opt.value ? "selected" : ""}`}>
+              <input type="radio" name="electricity_status" value={opt.value} checked={electricityStatus === opt.value} onChange={() => setElectricityStatus(opt.value)} />
               {opt.label}
             </label>
           ))}
@@ -323,7 +316,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       {/* Health services */}
       <div className="form-card">
         <span className="form-card-label">Health services functioning</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+        <div className="assessment-options">
           {[
             { value: "fully_functional",    label: "Fully functional" },
             { value: "partially_functional",label: "Partially functional" },
@@ -331,15 +324,8 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
             { value: "not_functioning",     label: "Not functioning at all" },
             { value: "unknown",             label: "Unknown" },
           ].map((opt) => (
-            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
-              <input
-                type="radio"
-                name="health_services"
-                value={opt.value}
-                checked={healthServices === opt.value}
-                onChange={() => setHealthServices(opt.value)}
-                style={{ marginTop: ".15rem", flexShrink: 0 }}
-              />
+            <label key={opt.value} className={`assessment-option radio-opt ${healthServices === opt.value ? "selected" : ""}`}>
+              <input type="radio" name="health_services" value={opt.value} checked={healthServices === opt.value} onChange={() => setHealthServices(opt.value)} />
               {opt.label}
             </label>
           ))}
@@ -349,7 +335,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       {/* Most pressing needs */}
       <div className="form-card">
         <span className="form-card-label">Most pressing needs</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+        <div className="assessment-options">
           {[
             { value: "food_water",        label: "Food assistance and safe drinking water" },
             { value: "cash_financial",    label: "Cash or financial assistance" },
@@ -362,17 +348,14 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
             { value: "community_support", label: "Support from local authorities and community organizations" },
             { value: "other",             label: "Other, please specify" },
           ].map((opt) => (
-            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
+            <label key={opt.value} className={`assessment-option checkbox-opt ${pressingNeeds.includes(opt.value) ? "selected" : ""}`}>
               <input
                 type="checkbox"
                 value={opt.value}
                 checked={pressingNeeds.includes(opt.value)}
                 onChange={(e) => setPressingNeeds(
-                  e.target.checked
-                    ? [...pressingNeeds, opt.value]
-                    : pressingNeeds.filter((v) => v !== opt.value)
+                  e.target.checked ? [...pressingNeeds, opt.value] : pressingNeeds.filter((v) => v !== opt.value)
                 )}
-                style={{ marginTop: ".15rem", flexShrink: 0 }}
               />
               {opt.label}
             </label>
