@@ -47,6 +47,48 @@ def _container(name: str):
 # Schema templates (embedded so Functions deployment is self-contained)
 # ---------------------------------------------------------------------------
 
+_UNDP_FIELDS = [
+    {
+        "id": "electricity_status", "type": "single_select", "required": True,
+        "label": {"en": "What is the current condition of electricity infrastructure in your community following the crisis?"},
+        "options": [
+            {"value": "no_damage",  "label": {"en": "No damage observed"}},
+            {"value": "minor",      "label": {"en": "Minor damage (service disruptions but quickly repairable)"}},
+            {"value": "moderate",   "label": {"en": "Moderate damage (partial outages requiring repairs)"}},
+            {"value": "severe",     "label": {"en": "Severe damage (major infrastructure damaged, prolonged outages)"}},
+            {"value": "destroyed",  "label": {"en": "Completely destroyed (no electricity infrastructure functioning)"}},
+            {"value": "unknown",    "label": {"en": "Unknown/cannot be assessed"}},
+        ],
+    },
+    {
+        "id": "health_services", "type": "single_select", "required": True,
+        "label": {"en": "How would you rate the overall functioning of health services in your community since the event?"},
+        "options": [
+            {"value": "fully_functional",    "label": {"en": "Fully functional"}},
+            {"value": "partially_functional","label": {"en": "Partially functional"}},
+            {"value": "largely_disrupted",   "label": {"en": "Largely disrupted"}},
+            {"value": "not_functioning",     "label": {"en": "Not functioning at all"}},
+            {"value": "unknown",             "label": {"en": "Unknown"}},
+        ],
+    },
+    {
+        "id": "pressing_needs", "type": "multi_select", "required": True,
+        "label": {"en": "What are the most pressing needs?"},
+        "options": [
+            {"value": "food_water",        "label": {"en": "Food assistance and safe drinking water"}},
+            {"value": "cash_financial",    "label": {"en": "Cash or financial assistance"}},
+            {"value": "healthcare",        "label": {"en": "Access to healthcare and essential medicines"}},
+            {"value": "shelter",           "label": {"en": "Shelter, housing repair, or temporary accommodation"}},
+            {"value": "livelihoods",       "label": {"en": "Restoration of livelihoods or income sources"}},
+            {"value": "wash",              "label": {"en": "Water, sanitation, and hygiene (toilets, washing facilities)"}},
+            {"value": "basic_services",    "label": {"en": "Restoration of basic services and infrastructure (electricity, roads, schools)"}},
+            {"value": "protection",        "label": {"en": "Protection services and psychosocial support"}},
+            {"value": "community_support", "label": {"en": "Support from local authorities and community organizations"}},
+            {"value": "other",             "label": {"en": "Other, please specify"}},
+        ],
+    },
+]
+
 _SCHEMAS: dict[str, dict] = {
     "flood": {
         "crisis_nature": "flood",
@@ -76,6 +118,45 @@ _SCHEMAS: dict[str, dict] = {
                           "zh": "最近的道路是否可通行？", "ru": "Проходима ли ближайшая дорога?",
                           "es": "¿Es transitable la carretera más cercana?"},
             },
+            {
+                "id": "electricity_status", "type": "single_select", "required": True,
+                "label": {"en": "What is the current condition of electricity infrastructure in your community following the crisis?"},
+                "options": [
+                    {"value": "no_damage",  "label": {"en": "No damage observed"}},
+                    {"value": "minor",      "label": {"en": "Minor damage (service disruptions but quickly repairable)"}},
+                    {"value": "moderate",   "label": {"en": "Moderate damage (partial outages requiring repairs)"}},
+                    {"value": "severe",     "label": {"en": "Severe damage (major infrastructure damaged, prolonged outages)"}},
+                    {"value": "destroyed",  "label": {"en": "Completely destroyed (no electricity infrastructure functioning)"}},
+                    {"value": "unknown",    "label": {"en": "Unknown/cannot be assessed"}},
+                ],
+            },
+            {
+                "id": "health_services", "type": "single_select", "required": True,
+                "label": {"en": "How would you rate the overall functioning of health services in your community since the event?"},
+                "options": [
+                    {"value": "fully_functional",    "label": {"en": "Fully functional"}},
+                    {"value": "partially_functional","label": {"en": "Partially functional"}},
+                    {"value": "largely_disrupted",   "label": {"en": "Largely disrupted"}},
+                    {"value": "not_functioning",     "label": {"en": "Not functioning at all"}},
+                    {"value": "unknown",             "label": {"en": "Unknown"}},
+                ],
+            },
+            {
+                "id": "pressing_needs", "type": "multi_select", "required": True,
+                "label": {"en": "What are the most pressing needs?"},
+                "options": [
+                    {"value": "food_water",        "label": {"en": "Food assistance and safe drinking water"}},
+                    {"value": "cash_financial",    "label": {"en": "Cash or financial assistance"}},
+                    {"value": "healthcare",        "label": {"en": "Access to healthcare and essential medicines"}},
+                    {"value": "shelter",           "label": {"en": "Shelter, housing repair, or temporary accommodation"}},
+                    {"value": "livelihoods",       "label": {"en": "Restoration of livelihoods or income sources"}},
+                    {"value": "wash",              "label": {"en": "Water, sanitation, and hygiene (toilets, washing facilities)"}},
+                    {"value": "basic_services",    "label": {"en": "Restoration of basic services and infrastructure (electricity, roads, schools)"}},
+                    {"value": "protection",        "label": {"en": "Protection services and psychosocial support"}},
+                    {"value": "community_support", "label": {"en": "Support from local authorities and community organizations"}},
+                    {"value": "other",             "label": {"en": "Other, please specify"}},
+                ],
+            },
         ],
     },
     "earthquake": {
@@ -100,6 +181,45 @@ _SCHEMAS: dict[str, dict] = {
                           "zh": "是否观察到余震造成的损害？",
                           "ru": "Наблюдались ли повреждения от афтершоков?",
                           "es": "¿Se han observado daños por réplicas?"},
+            },
+            {
+                "id": "electricity_status", "type": "single_select", "required": True,
+                "label": {"en": "What is the current condition of electricity infrastructure in your community following the crisis?"},
+                "options": [
+                    {"value": "no_damage",  "label": {"en": "No damage observed"}},
+                    {"value": "minor",      "label": {"en": "Minor damage (service disruptions but quickly repairable)"}},
+                    {"value": "moderate",   "label": {"en": "Moderate damage (partial outages requiring repairs)"}},
+                    {"value": "severe",     "label": {"en": "Severe damage (major infrastructure damaged, prolonged outages)"}},
+                    {"value": "destroyed",  "label": {"en": "Completely destroyed (no electricity infrastructure functioning)"}},
+                    {"value": "unknown",    "label": {"en": "Unknown/cannot be assessed"}},
+                ],
+            },
+            {
+                "id": "health_services", "type": "single_select", "required": True,
+                "label": {"en": "How would you rate the overall functioning of health services in your community since the event?"},
+                "options": [
+                    {"value": "fully_functional",    "label": {"en": "Fully functional"}},
+                    {"value": "partially_functional","label": {"en": "Partially functional"}},
+                    {"value": "largely_disrupted",   "label": {"en": "Largely disrupted"}},
+                    {"value": "not_functioning",     "label": {"en": "Not functioning at all"}},
+                    {"value": "unknown",             "label": {"en": "Unknown"}},
+                ],
+            },
+            {
+                "id": "pressing_needs", "type": "multi_select", "required": True,
+                "label": {"en": "What are the most pressing needs?"},
+                "options": [
+                    {"value": "food_water",        "label": {"en": "Food assistance and safe drinking water"}},
+                    {"value": "cash_financial",    "label": {"en": "Cash or financial assistance"}},
+                    {"value": "healthcare",        "label": {"en": "Access to healthcare and essential medicines"}},
+                    {"value": "shelter",           "label": {"en": "Shelter, housing repair, or temporary accommodation"}},
+                    {"value": "livelihoods",       "label": {"en": "Restoration of livelihoods or income sources"}},
+                    {"value": "wash",              "label": {"en": "Water, sanitation, and hygiene (toilets, washing facilities)"}},
+                    {"value": "basic_services",    "label": {"en": "Restoration of basic services and infrastructure (electricity, roads, schools)"}},
+                    {"value": "protection",        "label": {"en": "Protection services and psychosocial support"}},
+                    {"value": "community_support", "label": {"en": "Support from local authorities and community organizations"}},
+                    {"value": "other",             "label": {"en": "Other, please specify"}},
+                ],
             },
         ],
     },
@@ -133,25 +253,64 @@ _SCHEMAS: dict[str, dict] = {
                     {"value": "hundreds", "label": {"en": "Hundreds of people"}},
                 ],
             },
+            {
+                "id": "electricity_status", "type": "single_select", "required": True,
+                "label": {"en": "What is the current condition of electricity infrastructure in your community following the crisis?"},
+                "options": [
+                    {"value": "no_damage",  "label": {"en": "No damage observed"}},
+                    {"value": "minor",      "label": {"en": "Minor damage (service disruptions but quickly repairable)"}},
+                    {"value": "moderate",   "label": {"en": "Moderate damage (partial outages requiring repairs)"}},
+                    {"value": "severe",     "label": {"en": "Severe damage (major infrastructure damaged, prolonged outages)"}},
+                    {"value": "destroyed",  "label": {"en": "Completely destroyed (no electricity infrastructure functioning)"}},
+                    {"value": "unknown",    "label": {"en": "Unknown/cannot be assessed"}},
+                ],
+            },
+            {
+                "id": "health_services", "type": "single_select", "required": True,
+                "label": {"en": "How would you rate the overall functioning of health services in your community since the event?"},
+                "options": [
+                    {"value": "fully_functional",    "label": {"en": "Fully functional"}},
+                    {"value": "partially_functional","label": {"en": "Partially functional"}},
+                    {"value": "largely_disrupted",   "label": {"en": "Largely disrupted"}},
+                    {"value": "not_functioning",     "label": {"en": "Not functioning at all"}},
+                    {"value": "unknown",             "label": {"en": "Unknown"}},
+                ],
+            },
+            {
+                "id": "pressing_needs", "type": "multi_select", "required": True,
+                "label": {"en": "What are the most pressing needs?"},
+                "options": [
+                    {"value": "food_water",        "label": {"en": "Food assistance and safe drinking water"}},
+                    {"value": "cash_financial",    "label": {"en": "Cash or financial assistance"}},
+                    {"value": "healthcare",        "label": {"en": "Access to healthcare and essential medicines"}},
+                    {"value": "shelter",           "label": {"en": "Shelter, housing repair, or temporary accommodation"}},
+                    {"value": "livelihoods",       "label": {"en": "Restoration of livelihoods or income sources"}},
+                    {"value": "wash",              "label": {"en": "Water, sanitation, and hygiene (toilets, washing facilities)"}},
+                    {"value": "basic_services",    "label": {"en": "Restoration of basic services and infrastructure (electricity, roads, schools)"}},
+                    {"value": "protection",        "label": {"en": "Protection services and psychosocial support"}},
+                    {"value": "community_support", "label": {"en": "Support from local authorities and community organizations"}},
+                    {"value": "other",             "label": {"en": "Other, please specify"}},
+                ],
+            },
         ],
     },
     "hurricane": {
         "crisis_nature": "hurricane",
         "core_fields": ["damage_level", "infrastructure_types", "crisis_nature",
                         "requires_debris_clearing", "photo", "location"],
-        "modular_fields": [],
+        "modular_fields": _UNDP_FIELDS,
     },
     "wildfire": {
         "crisis_nature": "wildfire",
         "core_fields": ["damage_level", "infrastructure_types", "crisis_nature",
                         "requires_debris_clearing", "photo", "location"],
-        "modular_fields": [],
+        "modular_fields": _UNDP_FIELDS,
     },
     "generic": {
         "crisis_nature": "other",
         "core_fields": ["damage_level", "infrastructure_types", "crisis_nature",
                         "requires_debris_clearing", "photo", "location"],
-        "modular_fields": [],
+        "modular_fields": _UNDP_FIELDS,
     },
 }
 

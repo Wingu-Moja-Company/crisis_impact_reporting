@@ -33,21 +33,42 @@
     {
       "id": "electricity_status",
       "type": "single_select",
-      "required": false,
+      "required": true,
       "label": {
-        "en": "Current condition of electricity infrastructure?",
-        "ar": "الحالة الراهنة للبنية التحتية للكهرباء؟",
-        "fr": "État actuel des infrastructures électriques ?",
-        "zh": "电力基础设施的当前状况？",
-        "ru": "Текущее состояние электроснабжения?",
-        "es": "¿Estado actual de la infraestructura eléctrica?"
+        "en": "What is the current condition of electricity infrastructure in your community following the crisis?",
+        "ar": "ما هي الحالة الراهنة للبنية التحتية للكهرباء في مجتمعك في أعقاب الأزمة؟",
+        "fr": "Quel est l'état actuel des infrastructures électriques dans votre communauté suite à la crise ?",
+        "zh": "危机发生后，您所在社区的电力基础设施目前状况如何？",
+        "ru": "Каково текущее состояние электроснабжения в вашем сообществе после кризиса?",
+        "es": "¿Cuál es el estado actual de la infraestructura eléctrica en su comunidad tras la crisis?"
       },
       "options": [
-        { "value": "no_damage",  "label": { "en": "No damage observed",    "ar": "لا يوجد ضرر",   "fr": "Aucun dommage",         "zh": "无损坏",       "ru": "Повреждений нет",     "es": "Sin daños" } },
-        { "value": "minor",      "label": { "en": "Minor damage",           "ar": "ضرر طفيف",      "fr": "Dommages mineurs",       "zh": "轻微损坏",     "ru": "Незначительный ущерб","es": "Daño menor" } },
-        { "value": "moderate",   "label": { "en": "Moderate damage",        "ar": "ضرر معتدل",     "fr": "Dommages modérés",       "zh": "中等损坏",     "ru": "Умеренный ущерб",    "es": "Daño moderado" } },
-        { "value": "severe",     "label": { "en": "Severe damage",          "ar": "ضرر شديد",      "fr": "Dommages graves",        "zh": "严重损坏",     "ru": "Серьёзный ущерб",    "es": "Daño grave" } },
-        { "value": "destroyed",  "label": { "en": "Completely destroyed",   "ar": "مدمّر كلياً",   "fr": "Complètement détruit",   "zh": "完全损毁",     "ru": "Полностью разрушено", "es": "Completamente destruido" } }
+        { "value": "no_damage",  "label": { "en": "No damage observed" } },
+        { "value": "minor",      "label": { "en": "Minor damage (service disruptions but quickly repairable)" } },
+        { "value": "moderate",   "label": { "en": "Moderate damage (partial outages requiring repairs)" } },
+        { "value": "severe",     "label": { "en": "Severe damage (major infrastructure damaged, prolonged outages)" } },
+        { "value": "destroyed",  "label": { "en": "Completely destroyed (no electricity infrastructure functioning)" } },
+        { "value": "unknown",    "label": { "en": "Unknown/cannot be assessed" } }
+      ]
+    },
+    {
+      "id": "health_services",
+      "type": "single_select",
+      "required": true,
+      "label": {
+        "en": "How would you rate the overall functioning of health services in your community since the event?",
+        "ar": "كيف تقيّم الأداء العام للخدمات الصحية في مجتمعك منذ وقوع الحدث؟",
+        "fr": "Comment évalueriez-vous le fonctionnement global des services de santé dans votre communauté depuis l'événement ?",
+        "zh": "自事件发生以来，您如何评价您所在社区卫生服务的总体运作情况？",
+        "ru": "Как бы вы оценили общее функционирование медицинских услуг в вашем сообществе после события?",
+        "es": "¿Cómo calificaría el funcionamiento general de los servicios de salud en su comunidad desde el evento?"
+      },
+      "options": [
+        { "value": "fully_functional",    "label": { "en": "Fully functional" } },
+        { "value": "partially_functional","label": { "en": "Partially functional" } },
+        { "value": "largely_disrupted",   "label": { "en": "Largely disrupted" } },
+        { "value": "not_functioning",     "label": { "en": "Not functioning at all" } },
+        { "value": "unknown",             "label": { "en": "Unknown" } }
       ]
     },
     {
@@ -66,21 +87,26 @@
     {
       "id": "pressing_needs",
       "type": "multi_select",
-      "required": false,
+      "required": true,
       "label": {
-        "en": "What are the most urgent needs?",
+        "en": "What are the most pressing needs?",
         "ar": "ما هي الاحتياجات الأكثر إلحاحاً؟",
-        "fr": "Quels sont les besoins les plus urgents ?",
+        "fr": "Quels sont les besoins les plus pressants ?",
         "zh": "最迫切的需求是什么？",
-        "ru": "Каковы наиболее неотложные потребности?",
+        "ru": "Каковы наиболее насущные потребности?",
         "es": "¿Cuáles son las necesidades más urgentes?"
       },
       "options": [
-        { "value": "food_water",    "label": { "en": "Food and water",       "ar": "الغذاء والماء",    "fr": "Nourriture et eau",    "zh": "食物和水",    "ru": "Еда и вода",       "es": "Comida y agua" } },
-        { "value": "shelter",       "label": { "en": "Shelter",              "ar": "مأوى",             "fr": "Abri",                 "zh": "庇护所",      "ru": "Жильё",            "es": "Refugio" } },
-        { "value": "medical",       "label": { "en": "Medical assistance",   "ar": "مساعدة طبية",     "fr": "Aide médicale",        "zh": "医疗援助",    "ru": "Медицинская помощь","es": "Asistencia médica" } },
-        { "value": "evacuation",    "label": { "en": "Evacuation",           "ar": "إخلاء",            "fr": "Évacuation",           "zh": "撤离",        "ru": "Эвакуация",        "es": "Evacuación" } },
-        { "value": "search_rescue", "label": { "en": "Search and rescue",    "ar": "بحث وإنقاذ",      "fr": "Recherche et secours",  "zh": "搜救",        "ru": "Поиск и спасение", "es": "Búsqueda y rescate" } }
+        { "value": "food_water",        "label": { "en": "Food assistance and safe drinking water" } },
+        { "value": "cash_financial",    "label": { "en": "Cash or financial assistance" } },
+        { "value": "healthcare",        "label": { "en": "Access to healthcare and essential medicines" } },
+        { "value": "shelter",           "label": { "en": "Shelter, housing repair, or temporary accommodation" } },
+        { "value": "livelihoods",       "label": { "en": "Restoration of livelihoods or income sources" } },
+        { "value": "wash",              "label": { "en": "Water, sanitation, and hygiene (toilets, washing facilities)" } },
+        { "value": "basic_services",    "label": { "en": "Restoration of basic services and infrastructure (electricity, roads, schools)" } },
+        { "value": "protection",        "label": { "en": "Protection services and psychosocial support" } },
+        { "value": "community_support", "label": { "en": "Support from local authorities and community organizations" } },
+        { "value": "other",             "label": { "en": "Other, please specify" } }
       ]
     }
   ]

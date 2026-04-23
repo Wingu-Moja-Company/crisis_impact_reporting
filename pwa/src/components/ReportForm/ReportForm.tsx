@@ -27,6 +27,9 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   const [infraTypes, setInfraTypes] = useState<InfraType[]>([]);
   const [crisisNature, setCrisisNature] = useState("");
   const [debrisRequired, setDebrisRequired] = useState<boolean | null>(null);
+  const [electricityStatus, setElectricityStatus] = useState("");
+  const [healthServices, setHealthServices] = useState("");
+  const [pressingNeeds, setPressingNeeds] = useState<string[]>([]);
   const [description, setDescription] = useState("");
 
   // Location state
@@ -48,6 +51,9 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setInfraTypes([]);
     setCrisisNature("");
     setDebrisRequired(null);
+    setElectricityStatus("");
+    setHealthServices("");
+    setPressingNeeds([]);
     setDescription("");
     setLocationText("");
     setGeocodeResult(null);
@@ -83,7 +89,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null) return;
+    if (!damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null || !electricityStatus || !healthServices || pressingNeeds.length === 0) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -99,6 +105,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       requires_debris_clearing: String(debrisRequired),
       crisis_event_id:          crisisEventId,
       channel:                  "pwa",
+      modular_fields:           JSON.stringify({ electricity_status: electricityStatus, health_services: healthServices, pressing_needs: pressingNeeds }),
       ...(description    && { description }),
       ...(finalLat != null && { gps_lat: String(finalLat), gps_lon: String(finalLon) }),
       ...(locationText   && { location_description: locationText }),
@@ -286,6 +293,93 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         </div>
       </div>
 
+      {/* Electricity infrastructure */}
+      <div className="form-card">
+        <span className="form-card-label">Electricity infrastructure condition</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+          {[
+            { value: "no_damage",  label: "No damage observed" },
+            { value: "minor",      label: "Minor damage (service disruptions but quickly repairable)" },
+            { value: "moderate",   label: "Moderate damage (partial outages requiring repairs)" },
+            { value: "severe",     label: "Severe damage (major infrastructure damaged, prolonged outages)" },
+            { value: "destroyed",  label: "Completely destroyed (no electricity infrastructure functioning)" },
+            { value: "unknown",    label: "Unknown/cannot be assessed" },
+          ].map((opt) => (
+            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="electricity_status"
+                value={opt.value}
+                checked={electricityStatus === opt.value}
+                onChange={() => setElectricityStatus(opt.value)}
+                style={{ marginTop: ".15rem", flexShrink: 0 }}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Health services */}
+      <div className="form-card">
+        <span className="form-card-label">Health services functioning</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+          {[
+            { value: "fully_functional",    label: "Fully functional" },
+            { value: "partially_functional",label: "Partially functional" },
+            { value: "largely_disrupted",   label: "Largely disrupted" },
+            { value: "not_functioning",     label: "Not functioning at all" },
+            { value: "unknown",             label: "Unknown" },
+          ].map((opt) => (
+            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="health_services"
+                value={opt.value}
+                checked={healthServices === opt.value}
+                onChange={() => setHealthServices(opt.value)}
+                style={{ marginTop: ".15rem", flexShrink: 0 }}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Most pressing needs */}
+      <div className="form-card">
+        <span className="form-card-label">Most pressing needs</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: ".5rem" }}>
+          {[
+            { value: "food_water",        label: "Food assistance and safe drinking water" },
+            { value: "cash_financial",    label: "Cash or financial assistance" },
+            { value: "healthcare",        label: "Access to healthcare and essential medicines" },
+            { value: "shelter",           label: "Shelter, housing repair, or temporary accommodation" },
+            { value: "livelihoods",       label: "Restoration of livelihoods or income sources" },
+            { value: "wash",              label: "Water, sanitation, and hygiene (toilets, washing facilities)" },
+            { value: "basic_services",    label: "Restoration of basic services and infrastructure (electricity, roads, schools)" },
+            { value: "protection",        label: "Protection services and psychosocial support" },
+            { value: "community_support", label: "Support from local authorities and community organizations" },
+            { value: "other",             label: "Other, please specify" },
+          ].map((opt) => (
+            <label key={opt.value} style={{ display: "flex", alignItems: "flex-start", gap: ".6rem", fontSize: ".88rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                value={opt.value}
+                checked={pressingNeeds.includes(opt.value)}
+                onChange={(e) => setPressingNeeds(
+                  e.target.checked
+                    ? [...pressingNeeds, opt.value]
+                    : pressingNeeds.filter((v) => v !== opt.value)
+                )}
+                style={{ marginTop: ".15rem", flexShrink: 0 }}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
       {/* Description */}
       <div className="form-card">
         <span className="form-card-label">
@@ -304,7 +398,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       <button
         type="submit"
         className="submit-btn"
-        disabled={submitting || !damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null}
+        disabled={submitting || !damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null || !electricityStatus || !healthServices || pressingNeeds.length === 0}
       >
         {submitting ? "Submitting…" : "Submit damage report →"}
       </button>
