@@ -1,7 +1,9 @@
 """
 Azure Functions HTTP triggers for all export endpoints.
 
-GET /api/v1/reports         — GeoJSON | CSV | Shapefile
+GET /api/v1/reports                   — GeoJSON | CSV | Shapefile (all individual reports)
+GET /api/v1/buildings/current         — latest-per-building GeoJSON (current damage state)
+GET /api/v1/buildings/summary         — area-level damage aggregation counts
 GET /api/v1/feeds/cap/{id}.xml
 GET /api/v1/buildings/{id}/history
 GET /api/v1/crisis-events
@@ -14,7 +16,7 @@ import os
 import re
 import azure.functions as func
 
-from export.geojson import export_geojson
+from export.geojson import export_geojson, export_current_buildings, export_area_summary
 from export.cap_feed import build_cap_feed
 
 
@@ -56,7 +58,6 @@ def _check_api_key(req: func.HttpRequest) -> func.HttpResponse | None:
     if admin_key and hmac.compare_digest(provided, admin_key):
         return None
     return _UNAUTHORIZED
-    return None
 
 
 def _parse_bbox(raw: str | None):
@@ -99,6 +100,31 @@ def reports(req: func.HttpRequest) -> func.HttpResponse:
     # Default: GeoJSON
     collection = export_geojson(crisis_event_id, bbox, dmg, infra, since, limit, offset)
     return func.HttpResponse(json.dumps(collection), mimetype="application/geo+json")
+
+
+def current_buildings(req: func.HttpRequest) -> func.HttpResponse:
+    """GET /api/v1/buildings/current — latest-per-building GeoJSON."""
+    if (err := _check_api_key(req)):
+        return err
+    crisis_event_id = req.params.get("crisis_event_id")
+    if not crisis_event_id:
+        return func.HttpResponse('{"error":"crisis_event_id required"}', status_code=400, mimetype="application/json")
+    bbox  = _parse_bbox(req.params.get("bbox"))
+    dmg   = req.params.get("damage_level")
+    collection = export_current_buildings(crisis_event_id, bbox, dmg)
+    return func.HttpResponse(json.dumps(collection), mimetype="application/geo+json")
+
+
+def area_summary(req: func.HttpRequest) -> func.HttpResponse:
+    """GET /api/v1/buildings/summary — damage counts aggregated by level."""
+    if (err := _check_api_key(req)):
+        return err
+    crisis_event_id = req.params.get("crisis_event_id")
+    if not crisis_event_id:
+        return func.HttpResponse('{"error":"crisis_event_id required"}', status_code=400, mimetype="application/json")
+    bbox = _parse_bbox(req.params.get("bbox"))
+    summary = export_area_summary(crisis_event_id, bbox)
+    return func.HttpResponse(json.dumps(summary), mimetype="application/json")
 
 
 def cap_feed(req: func.HttpRequest) -> func.HttpResponse:

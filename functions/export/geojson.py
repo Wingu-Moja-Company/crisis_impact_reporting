@@ -81,6 +81,122 @@ def build_feature(doc: dict) -> dict | None:
     }
 
 
+def export_current_buildings(
+    crisis_event_id: str,
+    bbox: tuple[float, float, float, float] | None = None,
+    damage_level: str | None = None,
+) -> dict:
+    """
+    One GeoJSON Feature per building, reflecting its current (authoritative) damage state.
+    Queries the `buildings` container — each doc is already the winner of the severity-bias logic.
+    """
+    conditions = ["c.crisis_event_id = @cid", "IS_DEFINED(c.lat)", "IS_DEFINED(c.lon)"]
+    params: list[dict[str, Any]] = [{"name": "@cid", "value": crisis_event_id}]
+
+    if damage_level:
+        conditions.append("c.current_damage_level = @dmg")
+        params.append({"name": "@dmg", "value": damage_level})
+
+    query = f"SELECT * FROM c WHERE {' AND '.join(conditions)}"
+
+    docs = list(_container("buildings").query_items(
+        query=query, parameters=params, enable_cross_partition_query=True
+    ))
+
+    features = []
+    for doc in docs:
+        lat = doc.get("lat")
+        lon = doc.get("lon")
+        if lat is None or lon is None:
+            continue
+        if bbox:
+            lat_min, lon_min, lat_max, lon_max = bbox
+            if not (lon_min <= lon <= lon_max and lat_min <= lat <= lat_max):
+                continue
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [lon, lat]},
+            "properties": {
+                "building_id":              doc["building_id"],
+                "crisis_event_id":          doc["crisis_event_id"],
+                "current_damage_level":     doc["current_damage_level"],
+                "current_damage_report_id": doc.get("current_damage_report_id"),
+                "report_count":             doc.get("report_count", 1),
+                "last_updated":             doc.get("last_updated"),
+                "requires_debris_clearing": doc.get("requires_debris_clearing"),
+                "submitter_tier":           doc.get("submitter_tier", "public"),
+                "has_photo":                doc.get("has_photo", False),
+            },
+        })
+
+    return {"type": "FeatureCollection", "features": features}
+
+
+_SEVERITY_ORDER = ["minimal", "partial", "complete"]
+_INTERVENTION_PRIORITY = {
+    "complete": "critical",
+    "partial":  "high",
+    "minimal":  "medium",
+}
+
+
+def export_area_summary(
+    crisis_event_id: str,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> dict:
+    """
+    Counts of buildings by damage level for the given crisis event / bbox.
+    Returns one summary object — not GeoJSON — suitable for dashboard widgets.
+    """
+    conditions = ["c.crisis_event_id = @cid"]
+    params: list[dict[str, Any]] = [{"name": "@cid", "value": crisis_event_id}]
+
+    query = f"SELECT c.current_damage_level, c.lat, c.lon, c.requires_debris_clearing FROM c WHERE {' AND '.join(conditions)}"
+
+    docs = list(_container("buildings").query_items(
+        query=query, parameters=params, enable_cross_partition_query=True
+    ))
+
+    counts: dict[str, int] = {}
+    debris_required = 0
+    total = 0
+    for doc in docs:
+        if bbox:
+            lat = doc.get("lat")
+            lon = doc.get("lon")
+            if lat is None or lon is None:
+                continue
+            lat_min, lon_min, lat_max, lon_max = bbox
+            if not (lon_min <= lon <= lon_max and lat_min <= lat <= lat_max):
+                continue
+        lvl = doc.get("current_damage_level", "unknown")
+        counts[lvl] = counts.get(lvl, 0) + 1
+        total += 1
+        if doc.get("requires_debris_clearing"):
+            debris_required += 1
+
+    by_level = [
+        {
+            "damage_level": lvl,
+            "count": counts.get(lvl, 0),
+            "intervention_priority": _INTERVENTION_PRIORITY.get(lvl, "low"),
+        }
+        for lvl in _SEVERITY_ORDER
+        if counts.get(lvl, 0) > 0
+    ]
+    # include any unexpected values
+    for lvl, cnt in counts.items():
+        if lvl not in _SEVERITY_ORDER:
+            by_level.append({"damage_level": lvl, "count": cnt, "intervention_priority": "unknown"})
+
+    return {
+        "crisis_event_id": crisis_event_id,
+        "total_buildings": total,
+        "debris_clearing_required": debris_required,
+        "by_damage_level": by_level,
+    }
+
+
 def export_geojson(
     crisis_event_id: str,
     bbox: tuple[float, float, float, float] | None = None,

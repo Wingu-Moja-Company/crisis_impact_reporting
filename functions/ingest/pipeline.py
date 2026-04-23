@@ -289,7 +289,8 @@ def process_report(
 
     # Steps 10 + 11 — building state upsert and version history
     if building_id:
-        _upsert_building(building_id, report_id, submission, submitted_at, sub_hash)
+        _upsert_building(building_id, report_id, submission, submitted_at, sub_hash,
+                         lat, lon, bool(photo_bytes))
 
     # Step 12 — write full report document
     report_doc = {
@@ -383,12 +384,22 @@ def _get_submitter_tier(sub_hash: str) -> str:
         return "public"
 
 
+_DAMAGE_SEVERITY = {"minimal": 0, "partial": 1, "complete": 2}
+
+# Reports submitted within this window compete on severity rather than recency.
+# Outside the window, the most recent report always wins.
+_SEVERITY_BIAS_WINDOW_SECONDS = int(os.environ.get("SEVERITY_BIAS_WINDOW_SECONDS", "900"))  # 15 min default
+
+
 def _upsert_building(
     building_id: str,
     report_id: str,
     submission: DamageReportSubmission,
     submitted_at: str,
     sub_hash: str,
+    lat: float | None,
+    lon: float | None,
+    has_photo: bool,
 ) -> None:
     tier = _get_submitter_tier(sub_hash)
 
@@ -400,13 +411,47 @@ def _upsert_building(
         "damage_level": submission.damage_level.value,
         "submitted_at": submitted_at,
         "submitter_tier": tier,
+        "has_photo": has_photo,
     })
 
     container = _cosmos_container("buildings")
     try:
         existing = container.read_item(f"building_{building_id}", partition_key=submission.crisis_event_id)
-        is_newer = submitted_at > existing.get("last_updated", "")
-        # Verified reporter submissions break ties
+        existing_ts = existing.get("last_updated", "")
+        new_severity = _DAMAGE_SEVERITY.get(submission.damage_level.value, 0)
+        old_severity = _DAMAGE_SEVERITY.get(existing.get("current_damage_level", "minimal"), 0)
+
+        # Outside the bias window: recency wins unconditionally.
+        from datetime import datetime, timezone, timedelta
+        try:
+            age_seconds = (
+                datetime.fromisoformat(submitted_at) - datetime.fromisoformat(existing_ts)
+            ).total_seconds()
+        except Exception:
+            age_seconds = 999999
+
+        if age_seconds > _SEVERITY_BIAS_WINDOW_SECONDS:
+            # New report is old enough to simply win on recency.
+            is_newer = submitted_at > existing_ts
+        else:
+            # Within the window: prefer the more severe assessment.
+            if new_severity > old_severity:
+                is_newer = True
+            elif new_severity == old_severity:
+                # Same severity — prefer photo-backed, then recency, then verified tier.
+                if has_photo and not existing.get("has_photo"):
+                    is_newer = True
+                elif submitted_at > existing_ts:
+                    is_newer = True
+                elif tier == "verified" and existing.get("submitter_tier") != "verified":
+                    is_newer = True
+                else:
+                    is_newer = False
+            else:
+                # New is less severe — keep existing unless it's very old or unverified.
+                is_newer = False
+
+        # Verified submitter always breaks ties in their favour.
         if not is_newer and tier == "verified" and existing.get("submitter_tier") != "verified":
             is_newer = True
     except Exception:
@@ -424,4 +469,7 @@ def _upsert_building(
             "last_updated": submitted_at,
             "requires_debris_clearing": submission.requires_debris_clearing,
             "submitter_tier": tier,
+            "has_photo": has_photo,
+            "lat": lat,
+            "lon": lon,
         })
