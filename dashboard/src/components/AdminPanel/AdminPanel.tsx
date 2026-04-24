@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import "./AdminPanel.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface CrisisEvent {
   id: string;
@@ -29,12 +26,12 @@ const CRISIS_NATURES = [
 ] as const;
 
 const SCHEMA_TYPES = [
-  { value: "flood",      label: "Flood" },
-  { value: "earthquake", label: "Earthquake" },
-  { value: "conflict",   label: "Conflict" },
-  { value: "hurricane",  label: "Hurricane / Cyclone" },
-  { value: "wildfire",   label: "Wildfire" },
-  { value: "generic",    label: "Generic (no extra fields)" },
+  { value: "flood",      labelKey: "Flood" },
+  { value: "earthquake", labelKey: "Earthquake" },
+  { value: "conflict",   labelKey: "Conflict" },
+  { value: "hurricane",  labelKey: "Hurricane / Cyclone" },
+  { value: "wildfire",   labelKey: "Wildfire" },
+  { value: "generic",   labelKey: "Generic (no extra fields)" },
 ] as const;
 
 const STATUS_COLOURS: Record<string, string> = {
@@ -49,12 +46,8 @@ const NATURE_EMOJI: Record<string, string> = {
   explosion: "💥", chemical: "☣️",
 };
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function fmt(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit", month: "short", year: "numeric",
   });
 }
@@ -65,17 +58,14 @@ function exportUrl(eventId: string, format: "geojson" | "csv" | "shapefile"): st
   return key ? `${base}&_key=${encodeURIComponent(key)}` : base;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 function StatsBadge({ stats }: { stats: EventStats | null }) {
-  if (!stats) return <span className="ap-badge ap-badge--grey">Loading…</span>;
+  const { t } = useTranslation();
+  if (!stats) return <span className="ap-badge ap-badge--grey">{t("admin.loading_badge")}</span>;
   const total = stats.total_reports;
-  if (total === 0) return <span className="ap-badge ap-badge--grey">No reports</span>;
+  if (total === 0) return <span className="ap-badge ap-badge--grey">{t("admin.no_reports_badge")}</span>;
   return (
     <span className="ap-badge ap-badge--blue" title={JSON.stringify(stats.by_damage_level, null, 2)}>
-      {total} report{total !== 1 ? "s" : ""}
+      {t(total === 1 ? "admin.reports_badge_one" : "admin.reports_badge_other", { count: total })}
     </span>
   );
 }
@@ -87,6 +77,7 @@ interface CreateModalProps {
 }
 
 function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     id: "", name: "", country_code: "", region: "",
     crisis_nature: "flood", schema_type: "flood",
@@ -100,7 +91,6 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
     setError(null);
   }
 
-  // Auto-generate ID from name
   function handleNameChange(name: string) {
     const slug = name.toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")
@@ -152,12 +142,12 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
     <div className="ap-modal-backdrop" onClick={onClose}>
       <div className="ap-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ap-modal-header">
-          <h2>New Crisis Event</h2>
+          <h2>{t("admin.create_title")}</h2>
           <button className="ap-icon-btn" onClick={onClose}>✕</button>
         </div>
         <form className="ap-form" onSubmit={handleSubmit}>
           <label className="ap-label">
-            Event name *
+            {t("admin.field_name")}
             <input
               className="ap-input"
               value={form.name}
@@ -168,7 +158,7 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
           </label>
 
           <label className="ap-label">
-            Event ID (slug) *
+            {t("admin.field_id")}
             <input
               className="ap-input ap-mono"
               value={form.id}
@@ -178,12 +168,12 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
               pattern="[a-z0-9][a-z0-9\-]{1,48}[a-z0-9]"
               title="Lowercase letters, numbers, hyphens only (3–50 chars)"
             />
-            <span className="ap-hint">Used in API calls and URLs — cannot be changed later</span>
+            <span className="ap-hint">{t("admin.field_id_hint")}</span>
           </label>
 
           <div className="ap-row">
             <label className="ap-label">
-              Country code *
+              {t("admin.field_country")}
               <input
                 className="ap-input ap-short"
                 value={form.country_code}
@@ -194,7 +184,7 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
               />
             </label>
             <label className="ap-label ap-grow">
-              Region
+              {t("admin.field_region")}
               <input
                 className="ap-input"
                 value={form.region}
@@ -206,7 +196,7 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
 
           <div className="ap-row">
             <label className="ap-label ap-grow">
-              Crisis type *
+              {t("admin.field_crisis_type")}
               <select className="ap-input" value={form.crisis_nature}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -221,26 +211,26 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
               </select>
             </label>
             <label className="ap-label ap-grow">
-              Form schema
+              {t("admin.field_schema")}
               <select className="ap-input" value={form.schema_type}
                 onChange={(e) => set("schema_type", e.target.value)}>
                 {SCHEMA_TYPES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>{s.labelKey}</option>
                 ))}
               </select>
             </label>
           </div>
 
-          <div className="ap-section-title">Dashboard map centre (optional)</div>
+          <div className="ap-section-title">{t("admin.field_map_centre")}</div>
           <div className="ap-row">
             <label className="ap-label ap-grow">
-              Latitude
+              {t("admin.field_lat")}
               <input className="ap-input" type="number" step="any"
                 value={form.map_lat} onChange={(e) => set("map_lat", e.target.value)}
                 placeholder="-1.2577" />
             </label>
             <label className="ap-label ap-grow">
-              Longitude
+              {t("admin.field_lon")}
               <input className="ap-input" type="number" step="any"
                 value={form.map_lon} onChange={(e) => set("map_lon", e.target.value)}
                 placeholder="36.8614" />
@@ -251,10 +241,10 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
 
           <div className="ap-modal-actions">
             <button type="button" className="ap-btn ap-btn--ghost" onClick={onClose}>
-              Cancel
+              {t("admin.cancel")}
             </button>
             <button type="submit" className="ap-btn ap-btn--primary" disabled={saving}>
-              {saving ? "Creating…" : "Create event"}
+              {saving ? t("admin.creating") : t("admin.create")}
             </button>
           </div>
         </form>
@@ -263,10 +253,6 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main AdminPanel
-// ---------------------------------------------------------------------------
-
 interface Props {
   onClose: () => void;
   onSwitchCrisis: (id: string) => void;
@@ -274,19 +260,16 @@ interface Props {
 }
 
 export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
-  // Auth gate
+  const { t, i18n } = useTranslation();
   const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem("admin_key") ?? "");
   const [keyInput, setKeyInput] = useState("");
   const [authError, setAuthError] = useState(false);
   const isAuthed = !import.meta.env.VITE_ADMIN_KEY_REQUIRED || adminKey;
 
-  // Data
   const [events, setEvents] = useState<CrisisEvent[]>([]);
   const [stats, setStats] = useState<Record<string, EventStats>>({});
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-
-  // Status update state
   const [updating, setUpdating] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -306,7 +289,6 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
       list.sort((a, b) => b.created_at.localeCompare(a.created_at));
       setEvents(list);
 
-      // Fetch stats for each event in parallel
       const statsEntries = await Promise.all(
         list.map(async (ev) => {
           try {
@@ -360,29 +342,26 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
     setAuthError(false);
   }
 
-  // ---------------------------------------------------------------------------
-  // Auth gate
-  // ---------------------------------------------------------------------------
   if (!isAuthed || authError) {
     return (
       <div className="ap-overlay">
         <div className="ap-auth-card">
           <div className="ap-auth-icon">🔐</div>
-          <h2>Admin access</h2>
-          <p>Enter your admin API key to continue.</p>
-          {authError && <div className="ap-error">Invalid key — try again.</div>}
+          <h2>{t("admin.access_title")}</h2>
+          <p>{t("admin.access_prompt")}</p>
+          {authError && <div className="ap-error">{t("admin.invalid_key")}</div>}
           <form onSubmit={handleAuth}>
             <input
               className="ap-input"
               type="password"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
-              placeholder="Admin API key"
+              placeholder={t("admin.key_placeholder")}
               autoFocus
             />
             <div className="ap-modal-actions">
-              <button type="button" className="ap-btn ap-btn--ghost" onClick={onClose}>Cancel</button>
-              <button type="submit" className="ap-btn ap-btn--primary" disabled={!keyInput}>Unlock</button>
+              <button type="button" className="ap-btn ap-btn--ghost" onClick={onClose}>{t("admin.cancel")}</button>
+              <button type="submit" className="ap-btn ap-btn--primary" disabled={!keyInput}>{t("admin.unlock")}</button>
             </div>
           </form>
         </div>
@@ -390,31 +369,26 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Main panel
-  // ---------------------------------------------------------------------------
   return (
     <div className="ap-overlay">
       <div className="ap-panel">
-        {/* Header */}
         <div className="ap-panel-header">
           <div>
-            <h1 className="ap-panel-title">⚙️ Crisis Event Admin</h1>
-            <p className="ap-panel-sub">Create, manage and export crisis events</p>
+            <h1 className="ap-panel-title">⚙️ {t("admin.panel_title")}</h1>
+            <p className="ap-panel-sub">{t("admin.panel_sub")}</p>
           </div>
           <div className="ap-header-actions">
             <button className="ap-btn ap-btn--primary" onClick={() => setShowCreate(true)}>
-              + New event
+              {t("admin.new_event")}
             </button>
-            <button className="ap-icon-btn" onClick={onClose} title="Close admin panel">✕</button>
+            <button className="ap-icon-btn" onClick={onClose} title={t("admin.close")}>✕</button>
           </div>
         </div>
 
-        {/* Events list */}
         <div className="ap-list">
-          {loading && <div className="ap-loading">Loading events…</div>}
+          {loading && <div className="ap-loading">{t("admin.loading")}</div>}
           {!loading && events.length === 0 && (
-            <div className="ap-empty">No crisis events found. Create one to get started.</div>
+            <div className="ap-empty">{t("admin.empty")}</div>
           )}
           {events.map((ev) => (
             <div
@@ -426,7 +400,7 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                   <span className="ap-nature-emoji">{NATURE_EMOJI[ev.crisis_nature] ?? "🌐"}</span>
                   <span className="ap-card-name">{ev.name}</span>
                   {ev.id === activeCrisisId && (
-                    <span className="ap-badge ap-badge--green">Viewing</span>
+                    <span className="ap-badge ap-badge--green">{t("admin.viewing")}</span>
                   )}
                   <span
                     className="ap-status-dot"
@@ -442,7 +416,7 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                 <span>·</span>
                 <span>{ev.country_code}{ev.region ? ` / ${ev.region}` : ""}</span>
                 <span>·</span>
-                <span>Created {fmt(ev.created_at)}</span>
+                <span>{t("admin.created", { date: fmt(ev.created_at, i18n.language) })}</span>
                 <span
                   className="ap-status-label"
                   style={{ color: STATUS_COLOURS[ev.status] ?? "#888" }}
@@ -457,7 +431,7 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                     className="ap-btn ap-btn--sm ap-btn--ghost"
                     onClick={() => { onSwitchCrisis(ev.id); onClose(); }}
                   >
-                    View in dashboard
+                    {t("admin.view_dashboard")}
                   </button>
                 )}
                 {ev.status === "active" ? (
@@ -466,7 +440,7 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                     disabled={updating === ev.id}
                     onClick={() => updateStatus(ev.id, "archived")}
                   >
-                    {updating === ev.id ? "…" : "Archive"}
+                    {updating === ev.id ? "…" : t("admin.archive")}
                   </button>
                 ) : (
                   <button
@@ -474,19 +448,19 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                     disabled={updating === ev.id}
                     onClick={() => updateStatus(ev.id, "active")}
                   >
-                    {updating === ev.id ? "…" : "Reactivate"}
+                    {updating === ev.id ? "…" : t("admin.reactivate")}
                   </button>
                 )}
                 <div className="ap-export-group">
-                  <span className="ap-export-label">Export:</span>
-                  {(["geojson", "csv", "shapefile"] as const).map((fmt) => (
+                  <span className="ap-export-label">{t("admin.export_label")}</span>
+                  {(["geojson", "csv", "shapefile"] as const).map((f) => (
                     <a
-                      key={fmt}
-                      href={exportUrl(ev.id, fmt)}
+                      key={f}
+                      href={exportUrl(ev.id, f)}
                       className="ap-btn ap-btn--sm ap-btn--ghost"
                       download
                     >
-                      {fmt.toUpperCase()}
+                      {f.toUpperCase()}
                     </a>
                   ))}
                 </div>
@@ -495,16 +469,15 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
           ))}
         </div>
 
-        {/* Footer */}
         <div className="ap-panel-footer">
           <button
             className="ap-btn ap-btn--ghost ap-btn--sm"
             onClick={() => { sessionStorage.removeItem("admin_key"); setAdminKey(""); }}
           >
-            🔒 Sign out
+            {t("admin.sign_out")}
           </button>
           <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={load}>
-            ↺ Refresh
+            {t("admin.refresh")}
           </button>
         </div>
       </div>

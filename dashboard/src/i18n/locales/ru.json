@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "Панель мониторинга ущерба в кризисных ситуациях",
+      "nav_map": "Карта",
+      "nav_coverage": "Охват",
+      "nav_export": "Экспорт",
+      "reports_count": "Отчёты ({{count}})",
+      "close_panel": "Закрыть панель",
+      "toggle_feed": "Показать/скрыть ленту инцидентов"
+    },
+    "stats": {
+      "total_reports": "Всего отчётов",
+      "live_feed": "Прямой эфир",
+      "polling": "Опрос",
+      "minimal": "Минимальный",
+      "partial": "Частичный",
+      "complete": "Полный"
+    },
+    "feed": {
+      "loading": "Загрузка отчётов…",
+      "grade_1": "Степень 1",
+      "grade_2": "Степень 2",
+      "grade_3": "Степень 3",
+      "debris": "Завалы",
+      "verified": "Подтверждено",
+      "seconds_ago": "{{n}} с назад",
+      "minutes_ago": "{{n}} мин назад",
+      "hours_ago": "{{n}} ч назад",
+      "days_ago": "{{n}} д назад"
+    },
+    "building": {
+      "title": "Здание {{id}}",
+      "loading": "Загрузка истории…",
+      "no_reports": "Для этого здания отчётов нет."
+    },
+    "export": {
+      "title": "Экспорт данных",
+      "damage_level": "Уровень повреждения",
+      "all": "Все",
+      "minimal": "Минимальный",
+      "partial": "Частичный",
+      "complete": "Полный",
+      "infra_type": "Тип инфраструктуры",
+      "since": "С",
+      "geojson": "⬇ GeoJSON (QGIS / ArcGIS)",
+      "csv": "⬇ CSV (Excel / Sheets)",
+      "shapefile": "⬇ Shapefile (.zip)",
+      "downloading": "Загрузка…",
+      "failed": "Ошибка экспорта: {{error}}"
+    },
+    "admin": {
+      "access_title": "Доступ администратора",
+      "access_prompt": "Введите ключ API администратора для продолжения.",
+      "invalid_key": "Неверный ключ — попробуйте снова.",
+      "key_placeholder": "Ключ API администратора",
+      "cancel": "Отмена",
+      "unlock": "Разблокировать",
+      "panel_title": "Управление кризисными событиями",
+      "panel_sub": "Создание, управление и экспорт кризисных событий",
+      "new_event": "+ Новое событие",
+      "close": "Закрыть панель администратора",
+      "loading": "Загрузка событий…",
+      "empty": "Кризисные события не найдены. Создайте первое событие.",
+      "viewing": "Просматривается",
+      "view_dashboard": "Открыть в панели мониторинга",
+      "archive": "Архивировать",
+      "reactivate": "Реактивировать",
+      "export_label": "Экспорт:",
+      "sign_out": "🔒 Выйти",
+      "refresh": "↺ Обновить",
+      "create_title": "Новое кризисное событие",
+      "field_name": "Название события *",
+      "field_id": "ID события (slug) *",
+      "field_id_hint": "Используется в вызовах API и URL — не может быть изменён позднее",
+      "field_country": "Код страны *",
+      "field_region": "Регион",
+      "field_crisis_type": "Тип кризиса *",
+      "field_schema": "Схема формы",
+      "field_map_centre": "Центр карты панели (необязательно)",
+      "field_lat": "Широта",
+      "field_lon": "Долгота",
+      "creating": "Создание…",
+      "create": "Создать событие",
+      "loading_badge": "Загрузка…",
+      "no_reports_badge": "Нет отчётов",
+      "reports_badge_one": "{{count}} отчёт",
+      "reports_badge_other": "{{count}} отчётов",
+      "created": "Создано {{date}}"
+    }
+  }
+}

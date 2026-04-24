@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "危机损害控制面板",
+      "nav_map": "地图",
+      "nav_coverage": "覆盖范围",
+      "nav_export": "导出",
+      "reports_count": "报告 ({{count}})",
+      "close_panel": "关闭面板",
+      "toggle_feed": "切换事件动态"
+    },
+    "stats": {
+      "total_reports": "报告总数",
+      "live_feed": "实时动态",
+      "polling": "轮询中",
+      "minimal": "轻微",
+      "partial": "部分",
+      "complete": "完全"
+    },
+    "feed": {
+      "loading": "正在加载报告…",
+      "grade_1": "一级",
+      "grade_2": "二级",
+      "grade_3": "三级",
+      "debris": "废墟",
+      "verified": "已核实",
+      "seconds_ago": "{{n}}秒前",
+      "minutes_ago": "{{n}}分钟前",
+      "hours_ago": "{{n}}小时前",
+      "days_ago": "{{n}}天前"
+    },
+    "building": {
+      "title": "建筑物 {{id}}",
+      "loading": "正在加载历史记录…",
+      "no_reports": "该建筑物暂无报告。"
+    },
+    "export": {
+      "title": "导出数据",
+      "damage_level": "损坏程度",
+      "all": "全部",
+      "minimal": "轻微",
+      "partial": "部分",
+      "complete": "完全",
+      "infra_type": "基础设施类型",
+      "since": "从",
+      "geojson": "⬇ GeoJSON（QGIS / ArcGIS）",
+      "csv": "⬇ CSV（Excel / Sheets）",
+      "shapefile": "⬇ Shapefile（.zip）",
+      "downloading": "下载中…",
+      "failed": "导出失败：{{error}}"
+    },
+    "admin": {
+      "access_title": "管理员访问",
+      "access_prompt": "请输入管理员API密钥以继续。",
+      "invalid_key": "密钥无效 — 请重试。",
+      "key_placeholder": "管理员API密钥",
+      "cancel": "取消",
+      "unlock": "解锁",
+      "panel_title": "危机事件管理",
+      "panel_sub": "创建、管理和导出危机事件",
+      "new_event": "+ 新建事件",
+      "close": "关闭管理面板",
+      "loading": "正在加载事件…",
+      "empty": "未找到危机事件。创建一个以开始使用。",
+      "viewing": "正在查看",
+      "view_dashboard": "在控制面板中查看",
+      "archive": "归档",
+      "reactivate": "重新激活",
+      "export_label": "导出：",
+      "sign_out": "🔒 退出登录",
+      "refresh": "↺ 刷新",
+      "create_title": "新建危机事件",
+      "field_name": "事件名称 *",
+      "field_id": "事件ID（slug）*",
+      "field_id_hint": "用于API调用和URL — 创建后不可更改",
+      "field_country": "国家代码 *",
+      "field_region": "地区",
+      "field_crisis_type": "危机类型 *",
+      "field_schema": "表单模式",
+      "field_map_centre": "控制面板地图中心（可选）",
+      "field_lat": "纬度",
+      "field_lon": "经度",
+      "creating": "创建中…",
+      "create": "创建事件",
+      "loading_badge": "加载中…",
+      "no_reports_badge": "暂无报告",
+      "reports_badge_one": "{{count}} 份报告",
+      "reports_badge_other": "{{count}} 份报告",
+      "created": "创建于 {{date}}"
+    }
+  }
+}

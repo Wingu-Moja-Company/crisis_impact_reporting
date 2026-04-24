@@ -81,6 +81,41 @@ body {
   color: #fff;
 }
 
+/* ── Language toggle ── */
+.lang-toggle {
+  display: flex;
+  gap: .2rem;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.lang-btn {
+  padding: .2rem .4rem;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.25);
+  color: rgba(255,255,255,.6);
+  border-radius: 3px;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .03em;
+}
+
+.lang-btn:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+
+.lang-btn--active {
+  background: #fff;
+  color: var(--blue);
+  border-color: #fff;
+}
+
+/* ── RTL support ── */
+[dir="rtl"] .dashboard-header { flex-direction: row-reverse; }
+[dir="rtl"] .dashboard-header nav { flex-direction: row-reverse; }
+[dir="rtl"] .lang-toggle { margin-inline-start: 0; margin-inline-end: auto; }
+[dir="rtl"] .sidebar { border-right: none; border-left: 1px solid var(--grey-200); }
+
 /* ── Stats cards row ── */
 .stats-cards {
   display: flex;

@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "Tableau de bord des dommages de crise",
+      "nav_map": "Carte",
+      "nav_coverage": "Couverture",
+      "nav_export": "Exporter",
+      "reports_count": "Rapports ({{count}})",
+      "close_panel": "Fermer le panneau",
+      "toggle_feed": "Afficher/masquer le fil d'incidents"
+    },
+    "stats": {
+      "total_reports": "Total des rapports",
+      "live_feed": "Fil en direct",
+      "polling": "Actualisation",
+      "minimal": "Minimal",
+      "partial": "Partiel",
+      "complete": "Complet"
+    },
+    "feed": {
+      "loading": "Chargement des rapports…",
+      "grade_1": "Grade 1",
+      "grade_2": "Grade 2",
+      "grade_3": "Grade 3",
+      "debris": "Débris",
+      "verified": "Vérifié",
+      "seconds_ago": "il y a {{n}}s",
+      "minutes_ago": "il y a {{n}}m",
+      "hours_ago": "il y a {{n}}h",
+      "days_ago": "il y a {{n}}j"
+    },
+    "building": {
+      "title": "Bâtiment {{id}}",
+      "loading": "Chargement de l'historique…",
+      "no_reports": "Aucun rapport pour ce bâtiment."
+    },
+    "export": {
+      "title": "Exporter les données",
+      "damage_level": "Niveau de dommage",
+      "all": "Tout",
+      "minimal": "Minimal",
+      "partial": "Partiel",
+      "complete": "Complet",
+      "infra_type": "Type d'infrastructure",
+      "since": "Depuis",
+      "geojson": "⬇ GeoJSON (QGIS / ArcGIS)",
+      "csv": "⬇ CSV (Excel / Sheets)",
+      "shapefile": "⬇ Shapefile (.zip)",
+      "downloading": "Téléchargement…",
+      "failed": "Échec de l'export : {{error}}"
+    },
+    "admin": {
+      "access_title": "Accès administrateur",
+      "access_prompt": "Entrez votre clé API administrateur pour continuer.",
+      "invalid_key": "Clé invalide — réessayez.",
+      "key_placeholder": "Clé API administrateur",
+      "cancel": "Annuler",
+      "unlock": "Déverrouiller",
+      "panel_title": "Administration des événements de crise",
+      "panel_sub": "Créer, gérer et exporter des événements de crise",
+      "new_event": "+ Nouvel événement",
+      "close": "Fermer le panneau d'administration",
+      "loading": "Chargement des événements…",
+      "empty": "Aucun événement de crise trouvé. Créez-en un pour commencer.",
+      "viewing": "En cours de visualisation",
+      "view_dashboard": "Voir dans le tableau de bord",
+      "archive": "Archiver",
+      "reactivate": "Réactiver",
+      "export_label": "Exporter :",
+      "sign_out": "🔒 Se déconnecter",
+      "refresh": "↺ Actualiser",
+      "create_title": "Nouvel événement de crise",
+      "field_name": "Nom de l'événement *",
+      "field_id": "ID de l'événement (slug) *",
+      "field_id_hint": "Utilisé dans les appels API et les URL — ne peut pas être modifié ultérieurement",
+      "field_country": "Code pays *",
+      "field_region": "Région",
+      "field_crisis_type": "Type de crise *",
+      "field_schema": "Schéma de formulaire",
+      "field_map_centre": "Centre de la carte du tableau de bord (optionnel)",
+      "field_lat": "Latitude",
+      "field_lon": "Longitude",
+      "creating": "Création en cours…",
+      "create": "Créer l'événement",
+      "loading_badge": "Chargement…",
+      "no_reports_badge": "Aucun rapport",
+      "reports_badge_one": "{{count}} rapport",
+      "reports_badge_other": "{{count}} rapports",
+      "created": "Créé le {{date}}"
+    }
+  }
+}

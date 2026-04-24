@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { LiveReport } from "../../hooks/useLiveReports";
 
 interface Props {
@@ -12,29 +13,31 @@ const DAMAGE_COLORS: Record<string, string> = {
   complete: "#E24B4A",
 };
 
-const DAMAGE_GRADE: Record<string, string> = {
-  minimal:  "Grade 1",
-  partial:  "Grade 2",
-  complete: "Grade 3",
-};
-
 const CHANNEL_ICON: Record<string, string> = {
   telegram: "📱", pwa: "🌐", sms: "💬", api: "🔌",
 };
 
-function timeAgo(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60)    return `${diff}s ago`;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
 export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
+  const { t } = useTranslation();
+
+  function timeAgo(iso: string): string {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60)    return t("feed.seconds_ago", { n: diff });
+    if (diff < 3600)  return t("feed.minutes_ago", { n: Math.floor(diff / 60) });
+    if (diff < 86400) return t("feed.hours_ago",   { n: Math.floor(diff / 3600) });
+    return t("feed.days_ago", { n: Math.floor(diff / 86400) });
+  }
+
+  const DAMAGE_GRADE: Record<string, string> = {
+    minimal:  t("feed.grade_1"),
+    partial:  t("feed.grade_2"),
+    complete: t("feed.grade_3"),
+  };
+
   if (reports.length === 0) {
     return (
       <div className="feed-empty">
-        <p>Loading reports…</p>
+        <p>{t("feed.loading")}</p>
       </div>
     );
   }
@@ -54,22 +57,19 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
             style={{ borderLeft: `${selected ? 7 : 4}px solid ${color}` }}
             onClick={() => onSelect(r.report_id)}
           >
-            {/* Row 1: damage level + grade + debris flag + time */}
             <div className="feed-row">
               <span className="feed-level" style={{ color }}>
                 {r.damage_level.toUpperCase()}
               </span>
               {grade && <span className="feed-grade">{grade}</span>}
               {r.requires_debris_clearing && (
-                <span className="feed-debris">⚠ Debris</span>
+                <span className="feed-debris">⚠ {t("feed.debris")}</span>
               )}
               <span className="feed-time">{timeAgo(r.submitted_at)}</span>
             </div>
 
-            {/* Row 2: photo + body */}
             <div className="feed-body">
               <div className="feed-text">
-                {/* Infra + crisis type */}
                 {(r.infrastructure_types?.length > 0 || r.crisis_nature) && (
                   <div className="feed-infra">
                     {r.infrastructure_types.join(", ")}
@@ -78,16 +78,14 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
                   </div>
                 )}
 
-                {/* Location hint */}
                 {(r.what3words || r.location_description) && (
                   <div className="feed-location">
                     📍 {r.what3words
-                      ? r.what3words.replace(/^\/+/, "")   // strip any leading slashes
+                      ? r.what3words.replace(/^\/+/, "")
                       : r.location_description}
                   </div>
                 )}
 
-                {/* Description preview */}
                 {r.description_en && (
                   <div className="feed-desc">
                     {r.description_en.slice(0, 72)}
@@ -95,16 +93,14 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
                   </div>
                 )}
 
-                {/* Channel + tier */}
                 <div className="feed-meta-row">
                   <span>{chanIcon} {r.channel}</span>
                   {r.submitter_tier === "verified" && (
-                    <span className="feed-verified">✓ Verified</span>
+                    <span className="feed-verified">✓ {t("feed.verified")}</span>
                   )}
                 </div>
               </div>
 
-              {/* Photo thumbnail */}
               {r.photo_url && (
                 <img
                   src={r.photo_url}

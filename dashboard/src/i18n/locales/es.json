@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "Panel de daños en crisis",
+      "nav_map": "Mapa",
+      "nav_coverage": "Cobertura",
+      "nav_export": "Exportar",
+      "reports_count": "Informes ({{count}})",
+      "close_panel": "Cerrar panel",
+      "toggle_feed": "Mostrar/ocultar incidentes"
+    },
+    "stats": {
+      "total_reports": "Total de informes",
+      "live_feed": "Flujo en vivo",
+      "polling": "Actualizando",
+      "minimal": "Mínimo",
+      "partial": "Parcial",
+      "complete": "Completo"
+    },
+    "feed": {
+      "loading": "Cargando informes…",
+      "grade_1": "Grado 1",
+      "grade_2": "Grado 2",
+      "grade_3": "Grado 3",
+      "debris": "Escombros",
+      "verified": "Verificado",
+      "seconds_ago": "hace {{n}}s",
+      "minutes_ago": "hace {{n}}m",
+      "hours_ago": "hace {{n}}h",
+      "days_ago": "hace {{n}}d"
+    },
+    "building": {
+      "title": "Edificio {{id}}",
+      "loading": "Cargando historial…",
+      "no_reports": "No hay informes para este edificio."
+    },
+    "export": {
+      "title": "Exportar datos",
+      "damage_level": "Nivel de daño",
+      "all": "Todos",
+      "minimal": "Mínimo",
+      "partial": "Parcial",
+      "complete": "Completo",
+      "infra_type": "Tipo de infraestructura",
+      "since": "Desde",
+      "geojson": "⬇ GeoJSON (QGIS / ArcGIS)",
+      "csv": "⬇ CSV (Excel / Sheets)",
+      "shapefile": "⬇ Shapefile (.zip)",
+      "downloading": "Descargando…",
+      "failed": "Error al exportar: {{error}}"
+    },
+    "admin": {
+      "access_title": "Acceso de administrador",
+      "access_prompt": "Ingrese su clave API de administrador para continuar.",
+      "invalid_key": "Clave inválida — intente de nuevo.",
+      "key_placeholder": "Clave API de administrador",
+      "cancel": "Cancelar",
+      "unlock": "Desbloquear",
+      "panel_title": "Administración de eventos de crisis",
+      "panel_sub": "Crear, gestionar y exportar eventos de crisis",
+      "new_event": "+ Nuevo evento",
+      "close": "Cerrar panel de administración",
+      "loading": "Cargando eventos…",
+      "empty": "No se encontraron eventos de crisis. Cree uno para comenzar.",
+      "viewing": "Visualizando",
+      "view_dashboard": "Ver en el panel",
+      "archive": "Archivar",
+      "reactivate": "Reactivar",
+      "export_label": "Exportar:",
+      "sign_out": "🔒 Cerrar sesión",
+      "refresh": "↺ Actualizar",
+      "create_title": "Nuevo evento de crisis",
+      "field_name": "Nombre del evento *",
+      "field_id": "ID del evento (slug) *",
+      "field_id_hint": "Usado en llamadas API y URLs — no puede cambiarse después",
+      "field_country": "Código de país *",
+      "field_region": "Región",
+      "field_crisis_type": "Tipo de crisis *",
+      "field_schema": "Esquema del formulario",
+      "field_map_centre": "Centro del mapa del panel (opcional)",
+      "field_lat": "Latitud",
+      "field_lon": "Longitud",
+      "creating": "Creando…",
+      "create": "Crear evento",
+      "loading_badge": "Cargando…",
+      "no_reports_badge": "Sin informes",
+      "reports_badge_one": "{{count}} informe",
+      "reports_badge_other": "{{count}} informes",
+      "created": "Creado el {{date}}"
+    }
+  }
+}

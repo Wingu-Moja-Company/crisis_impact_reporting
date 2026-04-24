@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "Crisis Damage Dashboard",
+      "nav_map": "Map",
+      "nav_coverage": "Coverage",
+      "nav_export": "Export",
+      "reports_count": "Reports ({{count}})",
+      "close_panel": "Close panel",
+      "toggle_feed": "Toggle incident feed"
+    },
+    "stats": {
+      "total_reports": "Total reports",
+      "live_feed": "Live feed",
+      "polling": "Polling",
+      "minimal": "Minimal",
+      "partial": "Partial",
+      "complete": "Complete"
+    },
+    "feed": {
+      "loading": "Loading reports…",
+      "grade_1": "Grade 1",
+      "grade_2": "Grade 2",
+      "grade_3": "Grade 3",
+      "debris": "Debris",
+      "verified": "Verified",
+      "seconds_ago": "{{n}}s ago",
+      "minutes_ago": "{{n}}m ago",
+      "hours_ago": "{{n}}h ago",
+      "days_ago": "{{n}}d ago"
+    },
+    "building": {
+      "title": "Building {{id}}",
+      "loading": "Loading history…",
+      "no_reports": "No reports for this building."
+    },
+    "export": {
+      "title": "Export data",
+      "damage_level": "Damage level",
+      "all": "All",
+      "minimal": "Minimal",
+      "partial": "Partial",
+      "complete": "Complete",
+      "infra_type": "Infrastructure type",
+      "since": "Since",
+      "geojson": "⬇ GeoJSON (QGIS / ArcGIS)",
+      "csv": "⬇ CSV (Excel / Sheets)",
+      "shapefile": "⬇ Shapefile (.zip)",
+      "downloading": "Downloading…",
+      "failed": "Export failed: {{error}}"
+    },
+    "admin": {
+      "access_title": "Admin access",
+      "access_prompt": "Enter your admin API key to continue.",
+      "invalid_key": "Invalid key — try again.",
+      "key_placeholder": "Admin API key",
+      "cancel": "Cancel",
+      "unlock": "Unlock",
+      "panel_title": "Crisis Event Admin",
+      "panel_sub": "Create, manage and export crisis events",
+      "new_event": "+ New event",
+      "close": "Close admin panel",
+      "loading": "Loading events…",
+      "empty": "No crisis events found. Create one to get started.",
+      "viewing": "Viewing",
+      "view_dashboard": "View in dashboard",
+      "archive": "Archive",
+      "reactivate": "Reactivate",
+      "export_label": "Export:",
+      "sign_out": "🔒 Sign out",
+      "refresh": "↺ Refresh",
+      "create_title": "New Crisis Event",
+      "field_name": "Event name *",
+      "field_id": "Event ID (slug) *",
+      "field_id_hint": "Used in API calls and URLs — cannot be changed later",
+      "field_country": "Country code *",
+      "field_region": "Region",
+      "field_crisis_type": "Crisis type *",
+      "field_schema": "Form schema",
+      "field_map_centre": "Dashboard map centre (optional)",
+      "field_lat": "Latitude",
+      "field_lon": "Longitude",
+      "creating": "Creating…",
+      "create": "Create event",
+      "loading_badge": "Loading…",
+      "no_reports_badge": "No reports",
+      "reports_badge_one": "{{count}} report",
+      "reports_badge_other": "{{count}} reports",
+      "created": "Created {{date}}"
+    }
+  }
+}

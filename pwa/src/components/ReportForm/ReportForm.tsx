@@ -13,6 +13,40 @@ const CRISIS_NATURES = [
   "explosion", "chemical", "conflict", "civil_unrest",
 ] as const;
 
+const ELECTRICITY_OPTIONS = [
+  "no_damage", "minor", "moderate", "severe", "destroyed", "unknown",
+] as const;
+
+const HEALTH_OPTIONS = [
+  "fully", "partially", "largely_disrupted", "not_functioning", "unknown",
+] as const;
+
+const HEALTH_VALUES: Record<string, string> = {
+  fully:              "fully_functional",
+  partially:          "partially_functional",
+  largely_disrupted:  "largely_disrupted",
+  not_functioning:    "not_functioning",
+  unknown:            "unknown",
+};
+
+const NEEDS_OPTIONS = [
+  "food_water", "cash", "healthcare", "shelter", "livelihoods",
+  "wash", "basic_services", "protection", "community", "other",
+] as const;
+
+const NEEDS_VALUES: Record<string, string> = {
+  food_water:     "food_water",
+  cash:           "cash_financial",
+  healthcare:     "healthcare",
+  shelter:        "shelter",
+  livelihoods:    "livelihoods",
+  wash:           "wash",
+  basic_services: "basic_services",
+  protection:     "protection",
+  community:      "community_support",
+  other:          "other",
+};
+
 interface Props {
   crisisEventId: string;
   onSuccess?: (reportId: string) => void;
@@ -32,7 +66,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   const [pressingNeeds, setPressingNeeds] = useState<string[]>([]);
   const [description, setDescription] = useState("");
 
-  // Location state
   const [locationText, setLocationText] = useState("");
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
@@ -60,7 +93,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setGeocodeFailed(false);
     setSubmitError(null);
     setResult(null);
-    // Reset the file input so the same photo can be re-selected if needed
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -73,7 +105,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   }
 
   async function handleLocationBlur() {
-    // If GPS is already confirmed, no need to geocode
     if (coords || !locationText.trim()) return;
     setGeocoding(true);
     setGeocodeResult(null);
@@ -94,7 +125,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setSubmitting(true);
     setSubmitError(null);
 
-    // Resolve coordinates: GPS > geocoded text > none
     const finalLat = coords?.lat ?? geocodeResult?.lat;
     const finalLon = coords?.lon ?? geocodeResult?.lon;
 
@@ -105,7 +135,11 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       requires_debris_clearing: String(debrisRequired),
       crisis_event_id:          crisisEventId,
       channel:                  "pwa",
-      modular_fields:           JSON.stringify({ electricity_status: electricityStatus, health_services: healthServices, pressing_needs: pressingNeeds }),
+      modular_fields:           JSON.stringify({
+        electricity_status: electricityStatus,
+        health_services:    healthServices,
+        pressing_needs:     pressingNeeds,
+      }),
       ...(description    && { description }),
       ...(finalLat != null && { gps_lat: String(finalLat), gps_lon: String(finalLon) }),
       ...(locationText   && { location_description: locationText }),
@@ -122,7 +156,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         syncQueuedReports();
       }
     } catch (err) {
-      // Online but submission failed — queue locally and surface the error
       const errMsg = err instanceof Error ? err.message : String(err);
       setSubmitError(errMsg);
       const id = await enqueueReport(fields, photo);
@@ -136,7 +169,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setRetrying(true);
     await syncQueuedReports();
     setRetrying(false);
-    setResult(null); // return to form so user can try again if still failing
+    setResult(null);
   }
 
   if (result) {
@@ -145,19 +178,17 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         <div className="success-icon">{result.offline ? "⏳" : "✓"}</div>
         <div>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: ".3rem" }}>
-            {result.offline ? "Queued for upload" : "Report submitted"}
+            {result.offline ? t("success.queued_title") : t("success.submitted_title")}
           </h2>
           <p style={{ fontSize: ".88rem", color: "var(--grey-500)" }}>
-            {result.offline
-              ? "Couldn't reach the server right now — tap Retry or it will sync automatically."
-              : "Your report is now being processed"}
+            {result.offline ? t("success.queued_desc") : t("success.submitted_desc")}
           </p>
           {submitError && (
             <p style={{
               fontSize: ".78rem", color: "#b91c1c", marginTop: ".5rem",
               background: "#fef2f2", padding: ".4rem .6rem", borderRadius: "4px",
             }}>
-              Error: {submitError}
+              {t("success.error_prefix", { message: submitError })}
             </p>
           )}
         </div>
@@ -170,10 +201,10 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
               borderRadius: "8px", padding: ".6rem 1.2rem", fontWeight: 700,
               fontSize: ".9rem", cursor: "pointer", marginBottom: ".5rem" }}
           >
-            {retrying ? "Retrying…" : "Retry now"}
+            {retrying ? t("success.retrying") : t("success.retry")}
           </button>
         )}
-        <button onClick={resetForm}>Submit another report</button>
+        <button onClick={resetForm}>{t("success.submit_another")}</button>
       </div>
     );
   }
@@ -183,13 +214,13 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Photo */}
       <div className="form-card">
-        <span className="form-card-label">Photo evidence</span>
+        <span className="form-card-label">{t("form.section_photo")}</span>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} hidden />
         {photo ? (
           <>
             <img src={photo} alt="preview" className="photo-preview" />
             <button type="button" className="photo-change-btn" onClick={() => fileRef.current?.click()}>
-              Change photo
+              {t("form.change_photo")}
             </button>
           </>
         ) : (
@@ -203,27 +234,24 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Location */}
       <div className="form-card">
-        <span className="form-card-label">Location of damage</span>
+        <span className="form-card-label">{t("form.section_location")}</span>
         <div className="location-card">
-          {/* GPS button */}
           <button type="button" className="gps-btn" onClick={requestGps} disabled={gpsLoading}>
             <span>📍</span>
-            {gpsLoading ? "Getting location…" : "Use my GPS location"}
+            {gpsLoading ? t("form.getting_gps") : t("form.use_gps")}
           </button>
           {coords && (
             <div className="gps-confirmed">
-              ✓ GPS confirmed ({coords.lat.toFixed(4)}, {coords.lon.toFixed(4)})
+              ✓ {t("form.gps_confirmed")} ({coords.lat.toFixed(4)}, {coords.lon.toFixed(4)})
             </div>
           )}
-
-          {/* Text location with geocoding */}
           {!coords && (
             <>
-              <div className="divider-or">or type an address / landmark</div>
+              <div className="divider-or">{t("form.type_address")}</div>
               <input
                 className="w3w-input"
                 type="text"
-                placeholder="e.g. Near Westlands Market, Kibera Road..."
+                placeholder={t("form.address_placeholder")}
                 value={locationText}
                 onChange={(e) => {
                   setLocationText(e.target.value);
@@ -233,16 +261,16 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
                 onBlur={handleLocationBlur}
               />
               {geocoding && (
-                <div className="geocode-status geocode-searching">🔍 Looking up location…</div>
+                <div className="geocode-status geocode-searching">🔍 {t("form.looking_up")}</div>
               )}
               {geocodeResult && (
                 <div className="geocode-status geocode-found">
-                  📍 Located: {geocodeResult.displayName}
+                  📍 {t("form.located_at", { name: geocodeResult.displayName })}
                 </div>
               )}
               {geocodeFailed && locationText.trim() && (
                 <div className="geocode-status geocode-not-found">
-                  ℹ️ Location not found on map — will be saved as a description
+                  ℹ️ {t("form.location_not_found")}
                 </div>
               )}
             </>
@@ -252,62 +280,55 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Damage level */}
       <div className="form-card">
-        <span className="form-card-label">Level of damage</span>
+        <span className="form-card-label">{t("form.section_damage")}</span>
         <DamageSelector value={damageLevel} onChange={setDamageLevel} />
       </div>
 
       {/* Infrastructure type */}
       <div className="form-card">
-        <span className="form-card-label">Type of infrastructure</span>
+        <span className="form-card-label">{t("form.section_infra")}</span>
         <InfraTypeSelector selected={infraTypes} onChange={setInfraTypes} />
       </div>
 
       {/* Crisis nature */}
       <div className="form-card">
-        <span className="form-card-label">Nature of crisis</span>
+        <span className="form-card-label">{t("form.section_crisis")}</span>
         <select
           className="crisis-select"
           value={crisisNature}
           onChange={(e) => setCrisisNature(e.target.value)}
           required
         >
-          <option value="">Select crisis type…</option>
+          <option value="">{t("form.crisis_nature")}</option>
           {CRISIS_NATURES.map((n) => (
-            <option key={n} value={n}>{n.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+            <option key={n} value={n}>{t(`form.crisis_${n}`)}</option>
           ))}
         </select>
       </div>
 
       {/* Debris */}
       <div className="form-card">
-        <span className="form-card-label">Debris clearing required?</span>
+        <span className="form-card-label">{t("form.section_debris")}</span>
         <div className="debris-options">
           <label className={`debris-option yes ${debrisRequired === true ? "selected" : ""}`}>
             <input type="radio" name="debris" onChange={() => setDebrisRequired(true)} />
-            ⚠️ Yes, required
+            ⚠️ {t("form.debris_yes")}
           </label>
           <label className={`debris-option no ${debrisRequired === false ? "selected" : ""}`}>
             <input type="radio" name="debris" onChange={() => setDebrisRequired(false)} />
-            ✓ Not needed
+            ✓ {t("form.debris_no")}
           </label>
         </div>
       </div>
 
-      {/* Electricity infrastructure */}
+      {/* Electricity */}
       <div className="form-card">
-        <span className="form-card-label">Electricity infrastructure condition</span>
+        <span className="form-card-label">{t("form.section_electricity")}</span>
         <div className="assessment-options">
-          {[
-            { value: "no_damage",  label: "No damage observed" },
-            { value: "minor",      label: "Minor damage (service disruptions but quickly repairable)" },
-            { value: "moderate",   label: "Moderate damage (partial outages requiring repairs)" },
-            { value: "severe",     label: "Severe damage (major infrastructure damaged, prolonged outages)" },
-            { value: "destroyed",  label: "Completely destroyed (no electricity infrastructure functioning)" },
-            { value: "unknown",    label: "Unknown/cannot be assessed" },
-          ].map((opt) => (
-            <label key={opt.value} className={`assessment-option radio-opt ${electricityStatus === opt.value ? "selected" : ""}`}>
-              <input type="radio" name="electricity_status" value={opt.value} checked={electricityStatus === opt.value} onChange={() => setElectricityStatus(opt.value)} />
-              {opt.label}
+          {ELECTRICITY_OPTIONS.map((opt) => (
+            <label key={opt} className={`assessment-option radio-opt ${electricityStatus === opt ? "selected" : ""}`}>
+              <input type="radio" name="electricity_status" value={opt} checked={electricityStatus === opt} onChange={() => setElectricityStatus(opt)} />
+              {t(`form.elec_${opt}`)}
             </label>
           ))}
         </div>
@@ -315,63 +336,55 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Health services */}
       <div className="form-card">
-        <span className="form-card-label">Health services functioning</span>
+        <span className="form-card-label">{t("form.section_health")}</span>
         <div className="assessment-options">
-          {[
-            { value: "fully_functional",    label: "Fully functional" },
-            { value: "partially_functional",label: "Partially functional" },
-            { value: "largely_disrupted",   label: "Largely disrupted" },
-            { value: "not_functioning",     label: "Not functioning at all" },
-            { value: "unknown",             label: "Unknown" },
-          ].map((opt) => (
-            <label key={opt.value} className={`assessment-option radio-opt ${healthServices === opt.value ? "selected" : ""}`}>
-              <input type="radio" name="health_services" value={opt.value} checked={healthServices === opt.value} onChange={() => setHealthServices(opt.value)} />
-              {opt.label}
+          {HEALTH_OPTIONS.map((opt) => (
+            <label key={opt} className={`assessment-option radio-opt ${healthServices === HEALTH_VALUES[opt] ? "selected" : ""}`}>
+              <input
+                type="radio"
+                name="health_services"
+                value={HEALTH_VALUES[opt]}
+                checked={healthServices === HEALTH_VALUES[opt]}
+                onChange={() => setHealthServices(HEALTH_VALUES[opt])}
+              />
+              {t(`form.health_${opt}`)}
             </label>
           ))}
         </div>
       </div>
 
-      {/* Most pressing needs */}
+      {/* Pressing needs */}
       <div className="form-card">
-        <span className="form-card-label">Most pressing needs</span>
+        <span className="form-card-label">{t("form.section_needs")}</span>
         <div className="assessment-options">
-          {[
-            { value: "food_water",        label: "Food assistance and safe drinking water" },
-            { value: "cash_financial",    label: "Cash or financial assistance" },
-            { value: "healthcare",        label: "Access to healthcare and essential medicines" },
-            { value: "shelter",           label: "Shelter, housing repair, or temporary accommodation" },
-            { value: "livelihoods",       label: "Restoration of livelihoods or income sources" },
-            { value: "wash",              label: "Water, sanitation, and hygiene (toilets, washing facilities)" },
-            { value: "basic_services",    label: "Restoration of basic services and infrastructure (electricity, roads, schools)" },
-            { value: "protection",        label: "Protection services and psychosocial support" },
-            { value: "community_support", label: "Support from local authorities and community organizations" },
-            { value: "other",             label: "Other, please specify" },
-          ].map((opt) => (
-            <label key={opt.value} className={`assessment-option checkbox-opt ${pressingNeeds.includes(opt.value) ? "selected" : ""}`}>
-              <input
-                type="checkbox"
-                value={opt.value}
-                checked={pressingNeeds.includes(opt.value)}
-                onChange={(e) => setPressingNeeds(
-                  e.target.checked ? [...pressingNeeds, opt.value] : pressingNeeds.filter((v) => v !== opt.value)
-                )}
-              />
-              {opt.label}
-            </label>
-          ))}
+          {NEEDS_OPTIONS.map((opt) => {
+            const val = NEEDS_VALUES[opt];
+            return (
+              <label key={opt} className={`assessment-option checkbox-opt ${pressingNeeds.includes(val) ? "selected" : ""}`}>
+                <input
+                  type="checkbox"
+                  value={val}
+                  checked={pressingNeeds.includes(val)}
+                  onChange={(e) => setPressingNeeds(
+                    e.target.checked ? [...pressingNeeds, val] : pressingNeeds.filter((v) => v !== val)
+                  )}
+                />
+                {t(`form.needs_${opt}`)}
+              </label>
+            );
+          })}
         </div>
       </div>
 
       {/* Description */}
       <div className="form-card">
         <span className="form-card-label">
-          Additional details{" "}
-          <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+          {t("form.section_description")}{" "}
+          <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t("form.optional")}</span>
         </span>
         <textarea
           className="description-textarea"
-          placeholder="Describe what you see — people trapped, hazards, access routes…"
+          placeholder={t("form.description_placeholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -383,7 +396,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         className="submit-btn"
         disabled={submitting || !damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null || !electricityStatus || !healthServices || pressingNeeds.length === 0}
       >
-        {submitting ? "Submitting…" : "Submit damage report →"}
+        {submitting ? t("form.submitting") : t("form.submit")}
       </button>
 
     </form>

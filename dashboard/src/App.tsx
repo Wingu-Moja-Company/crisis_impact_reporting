@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardMap } from "./components/MapView/DashboardMap";
 import { CoverageHeatmap } from "./components/CoverageHeatmap/CoverageHeatmap";
 import { IncidentFeed } from "./components/IncidentFeed/IncidentFeed";
@@ -6,12 +7,12 @@ import { BuildingHistory } from "./components/BuildingHistory/BuildingHistory";
 import { ExportPanel } from "./components/ExportPanel/ExportPanel";
 import { StatsCards } from "./components/StatsCards/StatsCards";
 import { AdminPanel } from "./components/AdminPanel/AdminPanel";
+import { LanguageToggle } from "./components/LanguageToggle/LanguageToggle";
 import { useLiveReports } from "./hooks/useLiveReports";
 
 const DEFAULT_CRISIS_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
-const MAP_CENTER: [number, number] = [-1.2577, 36.8614]; // Nairobi default
+const MAP_CENTER: [number, number] = [-1.2577, 36.8614];
 
-/** URL param ?crisis_event_id= takes priority, so the page survives refresh. */
 function getCrisisIdFromUrl(): string {
   try {
     const param = new URLSearchParams(window.location.search).get("crisis_event_id");
@@ -22,7 +23,6 @@ function getCrisisIdFromUrl(): string {
 
 type View = "map" | "heatmap";
 
-/** Read ?report= from the URL on first load so Telegram links auto-select. */
 function getReportFromUrl(): string | null {
   try {
     return new URLSearchParams(window.location.search).get("report");
@@ -32,6 +32,7 @@ function getReportFromUrl(): string | null {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [crisisEventId, setCrisisEventId]       = useState(getCrisisIdFromUrl);
   const [view, setView]                         = useState<View>("map");
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
@@ -58,7 +59,6 @@ export default function App() {
     setSelectedBuilding(null);
     setSelectedReport(null);
     setShowExport(false);
-    // Persist to URL so refresh lands on the same crisis
     const url = new URL(window.location.href);
     url.searchParams.set("crisis_event_id", id);
     window.history.pushState({}, "", url.toString());
@@ -67,20 +67,21 @@ export default function App() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Crisis Damage Dashboard</h1>
+        <h1>{t("app.title")}</h1>
         <span className="crisis-id">{crisisEventId}</span>
         <nav>
-          <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>Map</button>
-          <button className={view === "heatmap" ? "active" : ""} onClick={() => setView("heatmap")}>Coverage</button>
-          <button onClick={() => setShowExport((s) => !s)}>Export</button>
+          <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>{t("app.nav_map")}</button>
+          <button className={view === "heatmap" ? "active" : ""} onClick={() => setView("heatmap")}>{t("app.nav_coverage")}</button>
+          <button onClick={() => setShowExport((s) => !s)}>{t("app.nav_export")}</button>
           <button
             className="admin-btn"
             onClick={() => setShowAdmin(true)}
-            title="Admin — manage crisis events"
+            title={t("admin.panel_title")}
           >
             ⚙️
           </button>
         </nav>
+        <LanguageToggle />
       </header>
 
       <StatsCards
@@ -98,12 +99,12 @@ export default function App() {
         <aside className={`sidebar${drawerOpen ? " sidebar--open" : ""}`}>
           <div className="sidebar-handle">
             <span className="sidebar-handle-label">
-              Reports ({liveReports.length})
+              {t("app.reports_count", { count: liveReports.length })}
             </span>
             <button
               className="sidebar-close-btn"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close panel"
+              aria-label={t("app.close_panel")}
             >✕</button>
           </div>
 
@@ -130,9 +131,9 @@ export default function App() {
           <button
             className="feed-fab"
             onClick={() => setDrawerOpen((o) => !o)}
-            aria-label="Toggle incident feed"
+            aria-label={t("app.toggle_feed")}
           >
-            📋 {liveReports.length} Reports
+            📋 {t("app.reports_count", { count: liveReports.length })}
           </button>
         </main>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchBuildingHistory, type BuildingVersion } from "../../services/api";
 
 interface Props {
@@ -13,6 +14,7 @@ const DAMAGE_COLORS: Record<string, string> = {
 };
 
 export function BuildingHistory({ buildingId, onClose }: Props) {
+  const { t, i18n } = useTranslation();
   const [history, setHistory] = useState<BuildingVersion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,13 +28,13 @@ export function BuildingHistory({ buildingId, onClose }: Props) {
   return (
     <div className="building-history-panel">
       <div className="panel-header">
-        <h3>Building {buildingId}</h3>
+        <h3>{t("building.title", { id: buildingId })}</h3>
         <button onClick={onClose}>✕</button>
       </div>
 
-      {loading && <p>Loading history…</p>}
+      {loading && <p>{t("building.loading")}</p>}
 
-      {!loading && history.length === 0 && <p>No reports for this building.</p>}
+      {!loading && history.length === 0 && <p>{t("building.no_reports")}</p>}
 
       {!loading && history.length > 0 && (
         <ol className="version-timeline">
@@ -45,7 +47,7 @@ export function BuildingHistory({ buildingId, onClose }: Props) {
               <div className="version-detail">
                 <strong>{v.damage_level}</strong>
                 <span className="version-meta">
-                  {new Date(v.submitted_at).toLocaleString()} · {v.submitter_tier}
+                  {new Date(v.submitted_at).toLocaleString(i18n.language)} · {v.submitter_tier}
                 </span>
                 <span className="version-report-id">{v.report_id}</span>
               </div>

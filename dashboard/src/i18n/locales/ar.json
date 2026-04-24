@@ -1,0 +1,92 @@
+{
+  "translation": {
+    "app": {
+      "title": "لوحة تحكم أضرار الأزمات",
+      "nav_map": "خريطة",
+      "nav_coverage": "التغطية",
+      "nav_export": "تصدير",
+      "reports_count": "التقارير ({{count}})",
+      "close_panel": "إغلاق اللوحة",
+      "toggle_feed": "تبديل تغذية الحوادث"
+    },
+    "stats": {
+      "total_reports": "إجمالي التقارير",
+      "live_feed": "تغذية مباشرة",
+      "polling": "استطلاع",
+      "minimal": "طفيف",
+      "partial": "جزئي",
+      "complete": "كامل"
+    },
+    "feed": {
+      "loading": "جارٍ تحميل التقارير…",
+      "grade_1": "الدرجة 1",
+      "grade_2": "الدرجة 2",
+      "grade_3": "الدرجة 3",
+      "debris": "حطام",
+      "verified": "موثّق",
+      "seconds_ago": "منذ {{n}} ث",
+      "minutes_ago": "منذ {{n}} د",
+      "hours_ago": "منذ {{n}} س",
+      "days_ago": "منذ {{n}} ي"
+    },
+    "building": {
+      "title": "المبنى {{id}}",
+      "loading": "جارٍ تحميل السجل…",
+      "no_reports": "لا توجد تقارير لهذا المبنى."
+    },
+    "export": {
+      "title": "تصدير البيانات",
+      "damage_level": "مستوى الضرر",
+      "all": "الكل",
+      "minimal": "طفيف",
+      "partial": "جزئي",
+      "complete": "كامل",
+      "infra_type": "نوع البنية التحتية",
+      "since": "منذ",
+      "geojson": "⬇ GeoJSON (QGIS / ArcGIS)",
+      "csv": "⬇ CSV (Excel / Sheets)",
+      "shapefile": "⬇ Shapefile (.zip)",
+      "downloading": "جارٍ التنزيل…",
+      "failed": "فشل التصدير: {{error}}"
+    },
+    "admin": {
+      "access_title": "وصول المشرف",
+      "access_prompt": "أدخل مفتاح API الخاص بالمشرف للمتابعة.",
+      "invalid_key": "مفتاح غير صالح — حاول مرة أخرى.",
+      "key_placeholder": "مفتاح API للمشرف",
+      "cancel": "إلغاء",
+      "unlock": "فتح",
+      "panel_title": "إدارة حدث الأزمة",
+      "panel_sub": "إنشاء وإدارة وتصدير أحداث الأزمات",
+      "new_event": "+ حدث جديد",
+      "close": "إغلاق لوحة المشرف",
+      "loading": "جارٍ تحميل الأحداث…",
+      "empty": "لم يُعثر على أحداث أزمات. أنشئ حدثاً للبدء.",
+      "viewing": "قيد المشاهدة",
+      "view_dashboard": "عرض في لوحة التحكم",
+      "archive": "أرشفة",
+      "reactivate": "إعادة تفعيل",
+      "export_label": "تصدير:",
+      "sign_out": "🔒 تسجيل الخروج",
+      "refresh": "↺ تحديث",
+      "create_title": "حدث أزمة جديد",
+      "field_name": "اسم الحدث *",
+      "field_id": "معرّف الحدث *",
+      "field_id_hint": "يُستخدم في استدعاءات API وعناوين URL — لا يمكن تغييره لاحقاً",
+      "field_country": "رمز الدولة *",
+      "field_region": "المنطقة",
+      "field_crisis_type": "نوع الأزمة *",
+      "field_schema": "نموذج المخطط",
+      "field_map_centre": "مركز خريطة لوحة التحكم (اختياري)",
+      "field_lat": "خط العرض",
+      "field_lon": "خط الطول",
+      "creating": "جارٍ الإنشاء…",
+      "create": "إنشاء الحدث",
+      "loading_badge": "جارٍ التحميل…",
+      "no_reports_badge": "لا توجد تقارير",
+      "reports_badge_one": "{{count}} تقرير",
+      "reports_badge_other": "{{count}} تقارير",
+      "created": "أُنشئ {{date}}"
+    }
+  }
+}

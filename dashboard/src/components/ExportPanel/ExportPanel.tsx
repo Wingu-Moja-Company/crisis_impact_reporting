@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { buildExportUrl } from "../../services/api";
 
 const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
@@ -8,9 +9,11 @@ interface Props {
 }
 
 export function ExportPanel({ crisisEventId }: Props) {
+  const { t } = useTranslation();
   const [damageFilter, setDamageFilter] = useState("");
   const [infraFilter, setInfraFilter] = useState("");
   const [sinceFilter, setSinceFilter] = useState("");
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   function filters() {
     return Object.fromEntries(
@@ -19,14 +22,10 @@ export function ExportPanel({ crisisEventId }: Props) {
     );
   }
 
-  const [downloading, setDownloading] = useState<string | null>(null);
-
   async function download(format: "geojson" | "csv" | "shapefile") {
     const url = buildExportUrl(crisisEventId, format, filters());
     setDownloading(format);
     try {
-      // Fetch via JS so the response is same-origin as a blob: URL.
-      // Direct cross-origin <a download> links are silently ignored by browsers.
       const res = await fetch(url, EXPORT_API_KEY ? { headers: { "X-API-Key": EXPORT_API_KEY } } : {});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
@@ -40,38 +39,39 @@ export function ExportPanel({ crisisEventId }: Props) {
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error("Export failed:", err);
-      alert(`Export failed: ${err}`);
+      alert(t("export.failed", { error: String(err) }));
     } finally {
       setDownloading(null);
     }
   }
 
+  const infra = ["residential","commercial","government","utility","transport","community","public_space","other"];
+
   return (
     <div className="export-panel">
-      <h3>Export data</h3>
+      <h3>{t("export.title")}</h3>
 
       <div className="export-filters">
         <label>
-          Damage level
+          {t("export.damage_level")}
           <select value={damageFilter} onChange={(e) => setDamageFilter(e.target.value)}>
-            <option value="">All</option>
-            <option value="minimal">Minimal</option>
-            <option value="partial">Partial</option>
-            <option value="complete">Complete</option>
+            <option value="">{t("export.all")}</option>
+            <option value="minimal">{t("export.minimal")}</option>
+            <option value="partial">{t("export.partial")}</option>
+            <option value="complete">{t("export.complete")}</option>
           </select>
         </label>
 
         <label>
-          Infrastructure type
+          {t("export.infra_type")}
           <select value={infraFilter} onChange={(e) => setInfraFilter(e.target.value)}>
-            <option value="">All</option>
-            {["residential","commercial","government","utility","transport","community","public_space","other"]
-              .map((t) => <option key={t} value={t}>{t}</option>)}
+            <option value="">{t("export.all")}</option>
+            {infra.map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
         </label>
 
         <label>
-          Since
+          {t("export.since")}
           <input
             type="datetime-local"
             value={sinceFilter}
@@ -82,13 +82,13 @@ export function ExportPanel({ crisisEventId }: Props) {
 
       <div className="export-buttons">
         <button onClick={() => download("geojson")} disabled={!!downloading}>
-          {downloading === "geojson" ? "Downloading…" : "⬇ GeoJSON (QGIS / ArcGIS)"}
+          {downloading === "geojson" ? t("export.downloading") : t("export.geojson")}
         </button>
         <button onClick={() => download("csv")} disabled={!!downloading}>
-          {downloading === "csv" ? "Downloading…" : "⬇ CSV (Excel / Sheets)"}
+          {downloading === "csv" ? t("export.downloading") : t("export.csv")}
         </button>
         <button onClick={() => download("shapefile")} disabled={!!downloading}>
-          {downloading === "shapefile" ? "Downloading…" : "⬇ Shapefile (.zip)"}
+          {downloading === "shapefile" ? t("export.downloading") : t("export.shapefile")}
         </button>
       </div>
     </div>
