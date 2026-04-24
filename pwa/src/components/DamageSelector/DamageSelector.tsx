@@ -3,12 +3,6 @@ import { useTranslation } from "../../hooks/useTranslation";
 const LEVELS = ["minimal", "partial", "complete"] as const;
 export type DamageLevel = (typeof LEVELS)[number];
 
-const META: Record<DamageLevel, { label: string; sub: string }> = {
-  minimal:  { label: "Minimal",  sub: "Cosmetic damage only, still functional" },
-  partial:  { label: "Partial",  sub: "Repairable, usable with caution" },
-  complete: { label: "Complete", sub: "Structurally unsafe or destroyed" },
-};
-
 interface Props {
   value: DamageLevel | null;
   onChange: (level: DamageLevel) => void;
@@ -35,8 +29,8 @@ export function DamageSelector({ value, onChange }: Props) {
             />
             <span className="damage-dot" />
             <span className="damage-text">
-              <strong>{META[level].label}</strong>
-              <span>{META[level].sub}</span>
+              <strong>{t(`form.damage_${level}_label`)}</strong>
+              <span>{t(`form.damage_${level}_sub`)}</span>
             </span>
           </label>
         ))}
