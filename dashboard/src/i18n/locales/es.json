@@ -49,6 +49,68 @@
       "downloading": "Descargando…",
       "failed": "Error al exportar: {{error}}"
     },
+    "infra": {
+      "residential": "Residencial",
+      "commercial": "Comercial",
+      "government": "Gubernamental",
+      "utility": "Servicios",
+      "transport": "Transporte",
+      "community": "Comunitario",
+      "public_space": "Espacio público",
+      "other": "Otro"
+    },
+    "nature": {
+      "flood": "Inundación",
+      "earthquake": "Terremoto",
+      "fire": "Incendio",
+      "conflict": "Conflicto",
+      "cyclone": "Ciclón",
+      "drought": "Sequía",
+      "landslide": "Deslizamiento",
+      "tsunami": "Tsunami",
+      "storm": "Tormenta",
+      "other": "Otro"
+    },
+    "popup": {
+      "grade_minimal": "Grado 1 — Daño cosmético",
+      "grade_partial": "Grado 2 — Reparable",
+      "grade_complete": "Grado 3 — Estructuralmente inseguro",
+      "no_photo": "Sin foto enviada",
+      "debris": "Remoción de escombros requerida",
+      "three_word": "Código de 3 palabras",
+      "gps_matched": "GPS del edificio coincide",
+      "verified": "Verificado",
+      "public_user": "Público",
+      "ai_title": "Evaluación IA",
+      "ai_confident": "{{pct}}% de confianza",
+      "ai_agrees": "IA de acuerdo",
+      "ai_suggests": "IA sugiere",
+      "access": "Acceso",
+      "priority_low": "Prioridad baja",
+      "priority_medium": "Prioridad media",
+      "priority_high": "Alto — responder en 48h",
+      "priority_critical": "Crítico — respuesta inmediata"
+    },
+    "hazard": {
+      "structural_collapse_risk": "Riesgo de derrumbe",
+      "fire_damage": "Daño por incendio",
+      "flood_damage": "Daño por inundación",
+      "debris_blocking_access": "Escombros bloqueando acceso",
+      "exposed_hazardous_materials": "Materiales peligrosos expuestos",
+      "road_damage": "Daño en carreteras"
+    },
+    "buildings": {
+      "nav": "Edificios",
+      "overview_title": "Resumen de daños",
+      "total": "Total de edificios",
+      "debris_required": "Requieren remoción de escombros",
+      "intervention_label": "Prioridad de intervención",
+      "priority_critical": "Crítico",
+      "priority_high": "Alto",
+      "priority_medium": "Medio",
+      "loading": "Cargando edificios…",
+      "no_data": "No hay datos de edificios disponibles."
+    },
     "admin": {
       "access_title": "Acceso de administrador",
       "access_prompt": "Ingrese su clave API de administrador para continuar.",

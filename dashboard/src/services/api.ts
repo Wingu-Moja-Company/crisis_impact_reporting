@@ -31,6 +31,29 @@ export interface BuildingVersion {
   submitter_tier: string;
 }
 
+export interface BuildingProperties {
+  building_id: string;
+  crisis_event_id: string;
+  current_damage_level: string;
+  report_count: number;
+  last_updated: string;
+  requires_debris_clearing: boolean;
+  submitter_tier: string;
+  has_photo: boolean;
+}
+
+export interface BuildingSummaryRow {
+  damage_level: string;
+  count: number;
+  intervention_priority: string;
+}
+
+export interface BuildingSummary {
+  total_buildings: number;
+  debris_clearing_required: number;
+  by_damage_level: BuildingSummaryRow[];
+}
+
 export interface CrisisStats {
   crisis_event_id: string;
   total_reports: number;
@@ -63,6 +86,22 @@ export async function fetchBuildingHistory(buildingId: string): Promise<Building
 
 export async function fetchStats(crisisEventId: string): Promise<CrisisStats> {
   const res = await fetch(`${API_BASE}/v1/crisis-events/${crisisEventId}/stats`, { headers: exportHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchCurrentBuildings(
+  crisisEventId: string
+): Promise<GeoJSON.FeatureCollection> {
+  const query = new URLSearchParams({ crisis_event_id: crisisEventId });
+  const res = await fetch(`${API_BASE}/v1/buildings/current?${query}`, { headers: exportHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchBuildingSummary(crisisEventId: string): Promise<BuildingSummary> {
+  const query = new URLSearchParams({ crisis_event_id: crisisEventId });
+  const res = await fetch(`${API_BASE}/v1/buildings/summary?${query}`, { headers: exportHeaders() });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

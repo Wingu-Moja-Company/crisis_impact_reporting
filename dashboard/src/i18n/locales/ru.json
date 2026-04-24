@@ -49,6 +49,68 @@
       "downloading": "Загрузка…",
       "failed": "Ошибка экспорта: {{error}}"
     },
+    "infra": {
+      "residential": "Жилой",
+      "commercial": "Коммерческий",
+      "government": "Правительственный",
+      "utility": "Коммунальный",
+      "transport": "Транспорт",
+      "community": "Общественный",
+      "public_space": "Общественное пространство",
+      "other": "Другое"
+    },
+    "nature": {
+      "flood": "Наводнение",
+      "earthquake": "Землетрясение",
+      "fire": "Пожар",
+      "conflict": "Конфликт",
+      "cyclone": "Циклон",
+      "drought": "Засуха",
+      "landslide": "Оползень",
+      "tsunami": "Цунами",
+      "storm": "Шторм",
+      "other": "Другое"
+    },
+    "popup": {
+      "grade_minimal": "Степень 1 — Косметические повреждения",
+      "grade_partial": "Степень 2 — Подлежит ремонту",
+      "grade_complete": "Степень 3 — Структурно небезопасен",
+      "no_photo": "Фото не прикреплено",
+      "debris": "Требуется расчистка завалов",
+      "three_word": "Трёхсловный адрес",
+      "gps_matched": "GPS здания совпал",
+      "verified": "Подтверждено",
+      "public_user": "Публичный",
+      "ai_title": "Оценка ИИ",
+      "ai_confident": "Уверенность {{pct}}%",
+      "ai_agrees": "ИИ согласен",
+      "ai_suggests": "ИИ предлагает",
+      "access": "Доступ",
+      "priority_low": "Низкий приоритет",
+      "priority_medium": "Средний приоритет",
+      "priority_high": "Высокий — ответ в течение 48 ч",
+      "priority_critical": "Критический — немедленный ответ"
+    },
+    "hazard": {
+      "structural_collapse_risk": "Риск обрушения",
+      "fire_damage": "Пожарные повреждения",
+      "flood_damage": "Повреждения от наводнения",
+      "debris_blocking_access": "Завалы блокируют доступ",
+      "exposed_hazardous_materials": "Открытые опасные материалы",
+      "road_damage": "Повреждения дороги"
+    },
+    "buildings": {
+      "nav": "Здания",
+      "overview_title": "Обзор повреждений",
+      "total": "Всего зданий",
+      "debris_required": "Требуют расчистки завалов",
+      "intervention_label": "Приоритет вмешательства",
+      "priority_critical": "Критический",
+      "priority_high": "Высокий",
+      "priority_medium": "Средний",
+      "loading": "Загрузка зданий…",
+      "no_data": "Данные о зданиях недоступны."
+    },
     "admin": {
       "access_title": "Доступ администратора",
       "access_prompt": "Введите ключ API администратора для продолжения.",

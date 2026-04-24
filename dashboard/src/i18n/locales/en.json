@@ -49,6 +49,68 @@
       "downloading": "Downloading…",
       "failed": "Export failed: {{error}}"
     },
+    "infra": {
+      "residential": "Residential",
+      "commercial": "Commercial",
+      "government": "Government",
+      "utility": "Utility",
+      "transport": "Transport",
+      "community": "Community",
+      "public_space": "Public space",
+      "other": "Other"
+    },
+    "nature": {
+      "flood": "Flood",
+      "earthquake": "Earthquake",
+      "fire": "Fire",
+      "conflict": "Conflict",
+      "cyclone": "Cyclone",
+      "drought": "Drought",
+      "landslide": "Landslide",
+      "tsunami": "Tsunami",
+      "storm": "Storm",
+      "other": "Other"
+    },
+    "popup": {
+      "grade_minimal": "Grade 1 — Cosmetic damage",
+      "grade_partial": "Grade 2 — Repairable",
+      "grade_complete": "Grade 3 — Structurally unsafe",
+      "no_photo": "No photo submitted",
+      "debris": "Debris clearing required",
+      "three_word": "3-word code",
+      "gps_matched": "Building GPS matched",
+      "verified": "Verified",
+      "public_user": "Public",
+      "ai_title": "AI Assessment",
+      "ai_confident": "{{pct}}% confident",
+      "ai_agrees": "AI agrees",
+      "ai_suggests": "AI suggests",
+      "access": "Access",
+      "priority_low": "Low priority",
+      "priority_medium": "Medium priority",
+      "priority_high": "High — respond within 48 h",
+      "priority_critical": "Critical — immediate response"
+    },
+    "hazard": {
+      "structural_collapse_risk": "Collapse risk",
+      "fire_damage": "Fire damage",
+      "flood_damage": "Flood damage",
+      "debris_blocking_access": "Debris blocking access",
+      "exposed_hazardous_materials": "Hazardous materials",
+      "road_damage": "Road damage"
+    },
+    "buildings": {
+      "nav": "Buildings",
+      "overview_title": "Damage overview",
+      "total": "Total buildings",
+      "debris_required": "Require debris clearing",
+      "intervention_label": "Intervention priority",
+      "priority_critical": "Critical",
+      "priority_high": "High",
+      "priority_medium": "Medium",
+      "loading": "Loading buildings…",
+      "no_data": "No building data available."
+    },
     "admin": {
       "access_title": "Admin access",
       "access_prompt": "Enter your admin API key to continue.",

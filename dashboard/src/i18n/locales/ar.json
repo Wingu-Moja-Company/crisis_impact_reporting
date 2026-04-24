@@ -49,6 +49,68 @@
       "downloading": "جارٍ التنزيل…",
       "failed": "فشل التصدير: {{error}}"
     },
+    "infra": {
+      "residential": "سكني",
+      "commercial": "تجاري",
+      "government": "حكومي",
+      "utility": "مرافق",
+      "transport": "نقل",
+      "community": "مجتمعي",
+      "public_space": "فضاء عام",
+      "other": "أخرى"
+    },
+    "nature": {
+      "flood": "فيضان",
+      "earthquake": "زلزال",
+      "fire": "حريق",
+      "conflict": "نزاع",
+      "cyclone": "إعصار",
+      "drought": "جفاف",
+      "landslide": "انهيار أرضي",
+      "tsunami": "تسونامي",
+      "storm": "عاصفة",
+      "other": "أخرى"
+    },
+    "popup": {
+      "grade_minimal": "الدرجة 1 — أضرار تجميلية",
+      "grade_partial": "الدرجة 2 — قابل للإصلاح",
+      "grade_complete": "الدرجة 3 — غير آمن هيكلياً",
+      "no_photo": "لم يتم تقديم صورة",
+      "debris": "يتطلب إزالة الحطام",
+      "three_word": "رمز ثلاثي الكلمات",
+      "gps_matched": "تطابق GPS المبنى",
+      "verified": "موثّق",
+      "public_user": "عام",
+      "ai_title": "تقييم الذكاء الاصطناعي",
+      "ai_confident": "ثقة {{pct}}%",
+      "ai_agrees": "الذكاء الاصطناعي يوافق",
+      "ai_suggests": "الذكاء الاصطناعي يقترح",
+      "access": "الوصول",
+      "priority_low": "أولوية منخفضة",
+      "priority_medium": "أولوية متوسطة",
+      "priority_high": "مرتفع — استجابة خلال 48 ساعة",
+      "priority_critical": "حرج — استجابة فورية"
+    },
+    "hazard": {
+      "structural_collapse_risk": "خطر الانهيار",
+      "fire_damage": "أضرار الحريق",
+      "flood_damage": "أضرار الفيضان",
+      "debris_blocking_access": "حطام يعيق الوصول",
+      "exposed_hazardous_materials": "مواد خطرة مكشوفة",
+      "road_damage": "أضرار الطريق"
+    },
+    "buildings": {
+      "nav": "المباني",
+      "overview_title": "نظرة عامة على الأضرار",
+      "total": "إجمالي المباني",
+      "debris_required": "تحتاج إزالة الحطام",
+      "intervention_label": "أولوية التدخل",
+      "priority_critical": "حرج",
+      "priority_high": "مرتفع",
+      "priority_medium": "متوسط",
+      "loading": "جارٍ تحميل المباني…",
+      "no_data": "لا توجد بيانات للمباني."
+    },
     "admin": {
       "access_title": "وصول المشرف",
       "access_prompt": "أدخل مفتاح API الخاص بالمشرف للمتابعة.",

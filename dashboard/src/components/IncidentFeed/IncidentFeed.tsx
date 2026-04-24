@@ -59,7 +59,7 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
           >
             <div className="feed-row">
               <span className="feed-level" style={{ color }}>
-                {r.damage_level.toUpperCase()}
+                {t(`stats.${r.damage_level}`, r.damage_level).toUpperCase()}
               </span>
               {grade && <span className="feed-grade">{grade}</span>}
               {r.requires_debris_clearing && (
@@ -72,9 +72,9 @@ export function IncidentFeed({ reports, selectedReportId, onSelect }: Props) {
               <div className="feed-text">
                 {(r.infrastructure_types?.length > 0 || r.crisis_nature) && (
                   <div className="feed-infra">
-                    {r.infrastructure_types.join(", ")}
+                    {r.infrastructure_types.map((it) => t(`infra.${it}`, it)).join(", ")}
                     {r.infrastructure_types.length > 0 && r.crisis_nature && " · "}
-                    {r.crisis_nature}
+                    {r.crisis_nature ? t(`nature.${r.crisis_nature}`, r.crisis_nature) : ""}
                   </div>
                 )}
 

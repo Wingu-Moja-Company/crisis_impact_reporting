@@ -4,11 +4,14 @@ import { DashboardMap } from "./components/MapView/DashboardMap";
 import { CoverageHeatmap } from "./components/CoverageHeatmap/CoverageHeatmap";
 import { IncidentFeed } from "./components/IncidentFeed/IncidentFeed";
 import { BuildingHistory } from "./components/BuildingHistory/BuildingHistory";
+import { BuildingsMap } from "./components/BuildingsView/BuildingsMap";
+import { BuildingsSummaryPanel } from "./components/BuildingsView/BuildingsSummaryPanel";
 import { ExportPanel } from "./components/ExportPanel/ExportPanel";
 import { StatsCards } from "./components/StatsCards/StatsCards";
 import { AdminPanel } from "./components/AdminPanel/AdminPanel";
 import { LanguageToggle } from "./components/LanguageToggle/LanguageToggle";
 import { useLiveReports } from "./hooks/useLiveReports";
+import { useBuildings } from "./hooks/useBuildings";
 
 const DEFAULT_CRISIS_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
 const MAP_CENTER: [number, number] = [-1.2577, 36.8614];
@@ -21,7 +24,7 @@ function getCrisisIdFromUrl(): string {
   return DEFAULT_CRISIS_ID;
 }
 
-type View = "map" | "heatmap";
+type View = "map" | "heatmap" | "buildings";
 
 function getReportFromUrl(): string | null {
   try {
@@ -42,6 +45,13 @@ export default function App() {
   const [drawerOpen, setDrawerOpen]             = useState(false);
 
   const { reports: liveReports, connected, lastFetched } = useLiveReports(crisisEventId);
+  const {
+    featureCollection: buildingsGeoJSON,
+    summary: buildingsSummary,
+    loading: buildingsLoading,
+    error: buildingsError,
+    refresh: refreshBuildings,
+  } = useBuildings(crisisEventId, view === "buildings");
 
   function handleReportSelect(reportId: string) {
     setSelectedReport(reportId);
@@ -72,6 +82,7 @@ export default function App() {
         <nav>
           <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>{t("app.nav_map")}</button>
           <button className={view === "heatmap" ? "active" : ""} onClick={() => setView("heatmap")}>{t("app.nav_coverage")}</button>
+          <button className={view === "buildings" ? "active" : ""} onClick={() => setView("buildings")}>{t("buildings.nav")}</button>
           <button onClick={() => setShowExport((s) => !s)}>{t("app.nav_export")}</button>
           <button
             className="admin-btn"
@@ -108,11 +119,20 @@ export default function App() {
             >✕</button>
           </div>
 
-          <IncidentFeed
-            reports={liveReports}
-            selectedReportId={selectedReport}
-            onSelect={handleReportSelect}
-          />
+          {view === "buildings" ? (
+            <BuildingsSummaryPanel
+              summary={buildingsSummary}
+              loading={buildingsLoading}
+              error={buildingsError}
+              onRefresh={refreshBuildings}
+            />
+          ) : (
+            <IncidentFeed
+              reports={liveReports}
+              selectedReportId={selectedReport}
+              onSelect={handleReportSelect}
+            />
+          )}
         </aside>
 
         <main className="map-container">
@@ -124,17 +144,26 @@ export default function App() {
               selectedReportId={selectedReport}
               onBuildingSelect={handleBuildingSelect}
             />
-          ) : (
+          ) : view === "heatmap" ? (
             <CoverageHeatmap crisisEventId={crisisEventId} center={MAP_CENTER} />
+          ) : (
+            <BuildingsMap
+              center={MAP_CENTER}
+              buildings={buildingsGeoJSON}
+              selectedBuildingId={selectedBuilding}
+              onBuildingSelect={handleBuildingSelect}
+            />
           )}
 
-          <button
-            className="feed-fab"
-            onClick={() => setDrawerOpen((o) => !o)}
-            aria-label={t("app.toggle_feed")}
-          >
-            📋 {t("app.reports_count", { count: liveReports.length })}
-          </button>
+          {view !== "buildings" && (
+            <button
+              className="feed-fab"
+              onClick={() => setDrawerOpen((o) => !o)}
+              aria-label={t("app.toggle_feed")}
+            >
+              📋 {t("app.reports_count", { count: liveReports.length })}
+            </button>
+          )}
         </main>
 
         {selectedBuilding && (

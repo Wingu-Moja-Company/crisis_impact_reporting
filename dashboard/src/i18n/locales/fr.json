@@ -49,6 +49,68 @@
       "downloading": "Téléchargement…",
       "failed": "Échec de l'export : {{error}}"
     },
+    "infra": {
+      "residential": "Résidentiel",
+      "commercial": "Commercial",
+      "government": "Gouvernemental",
+      "utility": "Utilités",
+      "transport": "Transport",
+      "community": "Communautaire",
+      "public_space": "Espace public",
+      "other": "Autre"
+    },
+    "nature": {
+      "flood": "Inondation",
+      "earthquake": "Séisme",
+      "fire": "Incendie",
+      "conflict": "Conflit",
+      "cyclone": "Cyclone",
+      "drought": "Sécheresse",
+      "landslide": "Glissement de terrain",
+      "tsunami": "Tsunami",
+      "storm": "Tempête",
+      "other": "Autre"
+    },
+    "popup": {
+      "grade_minimal": "Grade 1 — Dommages cosmétiques",
+      "grade_partial": "Grade 2 — Réparable",
+      "grade_complete": "Grade 3 — Structurellement dangereux",
+      "no_photo": "Aucune photo soumise",
+      "debris": "Déblaiement requis",
+      "three_word": "Code 3 mots",
+      "gps_matched": "GPS bâtiment correspondant",
+      "verified": "Vérifié",
+      "public_user": "Public",
+      "ai_title": "Évaluation IA",
+      "ai_confident": "{{pct}}% confiant",
+      "ai_agrees": "L'IA est d'accord",
+      "ai_suggests": "L'IA suggère",
+      "access": "Accès",
+      "priority_low": "Priorité faible",
+      "priority_medium": "Priorité moyenne",
+      "priority_high": "Élevée — répondre sous 48h",
+      "priority_critical": "Critique — réponse immédiate"
+    },
+    "hazard": {
+      "structural_collapse_risk": "Risque d'effondrement",
+      "fire_damage": "Dommages incendie",
+      "flood_damage": "Dommages inondation",
+      "debris_blocking_access": "Débris bloquant l'accès",
+      "exposed_hazardous_materials": "Matières dangereuses exposées",
+      "road_damage": "Dommages routiers"
+    },
+    "buildings": {
+      "nav": "Bâtiments",
+      "overview_title": "Aperçu des dégâts",
+      "total": "Total des bâtiments",
+      "debris_required": "Nécessitent déblaiement",
+      "intervention_label": "Priorité d'intervention",
+      "priority_critical": "Critique",
+      "priority_high": "Élevée",
+      "priority_medium": "Moyenne",
+      "loading": "Chargement des bâtiments…",
+      "no_data": "Aucune donnée bâtiment disponible."
+    },
     "admin": {
       "access_title": "Accès administrateur",
       "access_prompt": "Entrez votre clé API administrateur pour continuer.",

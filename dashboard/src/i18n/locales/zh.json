@@ -49,6 +49,68 @@
       "downloading": "下载中…",
       "failed": "导出失败：{{error}}"
     },
+    "infra": {
+      "residential": "住宅",
+      "commercial": "商业",
+      "government": "政府",
+      "utility": "公用设施",
+      "transport": "交通",
+      "community": "社区",
+      "public_space": "公共空间",
+      "other": "其他"
+    },
+    "nature": {
+      "flood": "洪水",
+      "earthquake": "地震",
+      "fire": "火灾",
+      "conflict": "冲突",
+      "cyclone": "气旋",
+      "drought": "干旱",
+      "landslide": "山体滑坡",
+      "tsunami": "海啸",
+      "storm": "风暴",
+      "other": "其他"
+    },
+    "popup": {
+      "grade_minimal": "一级 — 外观损坏",
+      "grade_partial": "二级 — 可修复",
+      "grade_complete": "三级 — 结构不安全",
+      "no_photo": "未提交照片",
+      "debris": "需要清理废墟",
+      "three_word": "三词地址",
+      "gps_matched": "已匹配建筑GPS",
+      "verified": "已核实",
+      "public_user": "公众",
+      "ai_title": "AI评估",
+      "ai_confident": "置信度{{pct}}%",
+      "ai_agrees": "AI同意",
+      "ai_suggests": "AI建议",
+      "access": "通道",
+      "priority_low": "低优先级",
+      "priority_medium": "中等优先级",
+      "priority_high": "高 — 48小时内响应",
+      "priority_critical": "紧急 — 立即响应"
+    },
+    "hazard": {
+      "structural_collapse_risk": "倒塌风险",
+      "fire_damage": "火灾损坏",
+      "flood_damage": "洪水损坏",
+      "debris_blocking_access": "废墟阻塞通道",
+      "exposed_hazardous_materials": "危险材料暴露",
+      "road_damage": "道路损坏"
+    },
+    "buildings": {
+      "nav": "建筑",
+      "overview_title": "损害概览",
+      "total": "建筑总数",
+      "debris_required": "需要清理废墟",
+      "intervention_label": "干预优先级",
+      "priority_critical": "紧急",
+      "priority_high": "高",
+      "priority_medium": "中等",
+      "loading": "正在加载建筑…",
+      "no_data": "暂无建筑数据。"
+    },
     "admin": {
       "access_title": "管理员访问",
       "access_prompt": "请输入管理员API密钥以继续。",

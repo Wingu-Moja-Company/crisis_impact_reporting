@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { LiveReport } from "../../hooks/useLiveReports";
+import i18n from "../../i18n";
 
 interface BuildingFeature extends GeoJSON.Feature {
   properties: {
@@ -33,12 +34,6 @@ function markerRadius(level: string, selected: boolean) {
   return selected ? base + 5 : base;
 }
 
-const GRADE_LABEL: Record<string, string> = {
-  minimal:  "Grade 1 — Cosmetic damage",
-  partial:  "Grade 2 — Repairable",
-  complete: "Grade 3 — Structurally unsafe",
-};
-
 const CHANNEL_ICON: Record<string, string> = {
   telegram: "📱", pwa: "🌐", sms: "💬", api: "🔌",
 };
@@ -58,29 +53,36 @@ function timeAgoPopup(iso: string): string {
 }
 
 function reportPopup(r: LiveReport): string {
-  const grade    = GRADE_LABEL[r.damage_level] ?? r.damage_level.toUpperCase();
+  const t        = (key: string, opts?: Record<string, unknown>): string => String(i18n.t(key, opts as never));
+  const grade    = t(`popup.grade_${r.damage_level}`, { defaultValue: r.damage_level.toUpperCase() });
   const timeStr  = r.submitted_at ? timeAgoPopup(r.submitted_at) : "—";
-  const infra    = r.infrastructure_types?.length ? r.infrastructure_types.map(esc).join(", ") : "—";
-  const nature   = esc(r.crisis_nature) || "—";
+  const infra    = r.infrastructure_types?.length
+    ? r.infrastructure_types.map((it) => esc(t(`infra.${it}`, { defaultValue: it }))).join(", ")
+    : "—";
+  const nature   = r.crisis_nature
+    ? esc(t(`nature.${r.crisis_nature}`, { defaultValue: r.crisis_nature }))
+    : "—";
   const chanIcon = CHANNEL_ICON[r.channel] ?? "📡";
-  const tier     = r.submitter_tier === "verified" ? "✓ Verified" : "👤 Public";
+  const tier     = r.submitter_tier === "verified"
+    ? `✓ ${t("popup.verified")}`
+    : `👤 ${t("popup.public_user")}`;
 
   const photoHtml = r.photo_url ? `
     <div class="pp-media">
       <img src="${esc(r.photo_url)}" alt="Damage photo" class="pp-photo"
            onerror="this.parentElement.style.display='none'">
-    </div>` : `<div class="pp-no-photo">📷 No photo submitted</div>`;
+    </div>` : `<div class="pp-no-photo">📷 ${esc(t("popup.no_photo"))}</div>`;
 
   const debrisHtml = r.requires_debris_clearing
-    ? `<div class="pp-debris">⚠️ Debris clearing required</div>` : "";
+    ? `<div class="pp-debris">⚠️ ${esc(t("popup.debris"))}</div>` : "";
 
   const locationHtml = (() => {
     if (r.what3words) {
-      const words = r.what3words.replace(/^\/+/, ""); // strip any leading slashes
-      return `<div class="pp-row">📍 3-word code: ${esc(words)}</div>`;
+      const words = r.what3words.replace(/^\/+/, "");
+      return `<div class="pp-row">📍 ${esc(t("popup.three_word"))}: ${esc(words)}</div>`;
     }
     if (r.location_description) return `<div class="pp-row">📍 ${esc(r.location_description)}</div>`;
-    if (r.building_footprint_matched) return `<div class="pp-row">📍 Building GPS matched</div>`;
+    if (r.building_footprint_matched) return `<div class="pp-row">📍 ${esc(t("popup.gps_matched"))}</div>`;
     return "";
   })();
 
@@ -98,12 +100,12 @@ function reportPopup(r: LiveReport): string {
     const aiLevel = r.ai_vision_suggested_level;
     const levelMatch = aiLevel && aiLevel === r.damage_level;
     const levelLabel = aiLevel
-      ? `${aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1)} damage`
+      ? t(`stats.${aiLevel}`, { defaultValue: aiLevel })
       : null;
     const levelRow = levelLabel
       ? `<div class="pp-ai-row">${levelMatch
-          ? `<span class="pp-ai-badge pp-ai-match">✓ AI agrees: ${esc(levelLabel)}</span>`
-          : `<span class="pp-ai-badge pp-ai-diff">⚡ AI suggests: ${esc(levelLabel)}</span>`
+          ? `<span class="pp-ai-badge pp-ai-match">✓ ${esc(t("popup.ai_agrees"))}: ${esc(levelLabel)}</span>`
+          : `<span class="pp-ai-badge pp-ai-diff">⚡ ${esc(t("popup.ai_suggests"))}: ${esc(levelLabel)}</span>`
         }</div>`
       : "";
 
@@ -112,36 +114,24 @@ function reportPopup(r: LiveReport): string {
       clear: "🟢", limited: "🟡", blocked: "🔴", unknown: "⚪",
     };
     const accessRow = r.ai_vision_access_status
-      ? `<div class="pp-ai-row">${ACCESS_ICON[r.ai_vision_access_status] ?? "⚪"} Access: <strong>${esc(r.ai_vision_access_status)}</strong></div>`
+      ? `<div class="pp-ai-row">${ACCESS_ICON[r.ai_vision_access_status] ?? "⚪"} ${esc(t("popup.access"))}: <strong>${esc(r.ai_vision_access_status)}</strong></div>`
       : "";
 
     // Hazard indicators
-    const HAZARD_LABEL: Record<string, string> = {
-      structural_collapse_risk:   "Collapse risk",
-      fire_damage:                "Fire damage",
-      flood_damage:               "Flood damage",
-      debris_blocking_access:     "Debris blocking access",
-      exposed_hazardous_materials:"Hazardous materials",
-      road_damage:                "Road damage",
-    };
     const hazards = (r.ai_vision_hazard_indicators ?? [])
-      .map((h) => HAZARD_LABEL[h] ?? h)
+      .map((h) => esc(t(`hazard.${h}`, { defaultValue: h })))
       .join(" · ");
     const hazardRow = hazards
-      ? `<div class="pp-ai-row pp-ai-hazard">⚠️ ${esc(hazards)}</div>`
+      ? `<div class="pp-ai-row pp-ai-hazard">⚠️ ${hazards}</div>`
       : "";
 
     // Intervention priority
     const PRIORITY_CLASS: Record<string, string> = {
       low: "pp-pri-low", medium: "pp-pri-med", high: "pp-pri-high", critical: "pp-pri-crit",
     };
-    const PRIORITY_LABEL: Record<string, string> = {
-      low: "Low priority", medium: "Medium priority",
-      high: "High — respond within 48 h", critical: "Critical — immediate response",
-    };
     const pri = r.ai_vision_intervention_priority;
     const priorityRow = pri
-      ? `<div class="pp-ai-row"><span class="pp-priority ${PRIORITY_CLASS[pri] ?? ""}">${esc(PRIORITY_LABEL[pri] ?? pri)}</span></div>`
+      ? `<div class="pp-ai-row"><span class="pp-priority ${PRIORITY_CLASS[pri] ?? ""}">${esc(t(`popup.priority_${pri}`, { defaultValue: pri }))}</span></div>`
       : "";
 
     // Summary
@@ -152,8 +142,8 @@ function reportPopup(r: LiveReport): string {
     return `
       <div class="pp-ai-card">
         <div class="pp-ai-header">
-          <span class="pp-ai-title">🤖 AI Assessment</span>
-          <span class="pp-ai-conf">${pct}% confident</span>
+          <span class="pp-ai-title">🤖 ${esc(t("popup.ai_title"))}</span>
+          <span class="pp-ai-conf">${esc(t("popup.ai_confident", { pct }))}</span>
         </div>
         ${levelRow}${accessRow}${hazardRow}${priorityRow}${summaryRow}
       </div>`;
@@ -191,6 +181,14 @@ export function DashboardMap({
   // report_id → circleMarker, so we can highlight / open popup on selection
   const markerIndex    = useRef<Map<string, L.CircleMarker>>(new Map());
   const initialFit     = useRef(false);
+
+  // Track language so markers (popup HTML) rebuild when language changes
+  const [lang, setLang] = useState(i18n.language);
+  useEffect(() => {
+    const h = () => setLang(i18n.language);
+    i18n.on("languageChanged", h);
+    return () => { i18n.off("languageChanged", h); };
+  }, []);
 
   // ── Initialise map once ────────────────────────────────────────────────────
   useEffect(() => {
@@ -271,7 +269,7 @@ export function DashboardMap({
         initialFit.current = true; // prevent fitBounds from overriding
       }
     }
-  }, [liveReports]);
+  }, [liveReports, lang]);
 
   // ── React to selection change: fly to marker + open popup ─────────────────
   useEffect(() => {
