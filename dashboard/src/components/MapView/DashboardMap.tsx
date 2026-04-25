@@ -313,7 +313,7 @@ export function DashboardMap({
     }
 
     // Auto-fit bounds on first load only (skip if a report is pre-selected from URL)
-    if (!initialFit.current && !selectedReportId) {
+    if (!initialFit.current && !selectedReportId && withCoords.length > 0) {
       const latlngs = withCoords.map((r) => [r.coordinates![1], r.coordinates![0]] as [number, number]);
       mapRef.current.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 14 });
       initialFit.current = true;
