@@ -295,10 +295,17 @@ export function DashboardMap({
       (m as L.CircleMarker).setRadius(markerRadius(r?.damage_level ?? "unknown", sel));
     }
 
-    // Fly to and open popup
+    // Fly to and open popup — offset center downward so popup has room above marker
     if (report?.coordinates) {
       const [lon, lat] = report.coordinates;
-      mapRef.current.flyTo([lat, lon], Math.max(mapRef.current.getZoom(), 15), { duration: 0.8 });
+      const map = mapRef.current;
+      const zoom = Math.max(map.getZoom(), 15);
+      const markerPx = map.project([lat, lon], zoom);
+      const containerH = map.getContainer().getBoundingClientRect().height;
+      // Shift map center up by 30% of container height so marker sits ~65% down
+      const centerPx = markerPx.subtract([0, containerH * 0.3]);
+      const centerLatLng = map.unproject(centerPx, zoom);
+      map.flyTo(centerLatLng, zoom, { duration: 0.8 });
     }
     marker.openPopup();
   }, [selectedReportId]);

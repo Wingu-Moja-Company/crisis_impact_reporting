@@ -5,6 +5,7 @@ Accepts multipart/form-data with report fields + optional photo.
 
 import collections
 import hashlib
+import hmac
 import json
 import os
 import time
@@ -13,6 +14,33 @@ import azure.functions as func
 
 from ingest.schema import DamageReportSubmission
 from ingest.pipeline import process_report
+
+
+_UNAUTHORIZED = func.HttpResponse(
+    '{"error":"unauthorized"}', status_code=401, mimetype="application/json",
+    headers={"WWW-Authenticate": 'ApiKey realm="crisis-ingest"'},
+)
+
+
+def _check_ingest_key(req: func.HttpRequest) -> func.HttpResponse | None:
+    """
+    Validate X-API-Key against INGEST_API_KEY env var.
+    ADMIN_API_KEY is also accepted as a super-key.
+    Returns a 401 response if invalid; None if authorised.
+    When INGEST_API_KEY is not set the check is skipped (open / dev mode).
+    """
+    ingest_key = os.environ.get("INGEST_API_KEY", "")
+    admin_key  = os.environ.get("ADMIN_API_KEY", "")
+    if not ingest_key and not admin_key:
+        return None  # not configured — permit all (development)
+    provided = req.headers.get("X-API-Key", "") or req.headers.get("X-Admin-Key", "")
+    if not provided:
+        return _UNAUTHORIZED
+    if ingest_key and hmac.compare_digest(provided, ingest_key):
+        return None
+    if admin_key and hmac.compare_digest(provided, admin_key):
+        return None
+    return _UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +81,10 @@ def _is_rate_limited(raw_id: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    # ── API key auth ─────────────────────────────────────────────────────────
+    if (err := _check_ingest_key(req)):
+        return err
+
     # Raw submitter identifier — hashed inside rate limiter and pipeline; never stored raw
     raw_submitter_id = req.headers.get("X-Submitter-Id", req.headers.get("X-Forwarded-For", "anon"))
 

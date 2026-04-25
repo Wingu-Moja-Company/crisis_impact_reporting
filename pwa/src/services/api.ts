@@ -1,4 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const INGEST_API_KEY = import.meta.env.VITE_INGEST_API_KEY ?? "";
 
 export interface SubmitResult {
   report_id: string;
@@ -20,8 +21,12 @@ export async function submitReport(
     formData.append("photo", blob, "photo.jpg");
   }
 
+  const headers: HeadersInit = {};
+  if (INGEST_API_KEY) headers["X-API-Key"] = INGEST_API_KEY;
+
   const response = await fetch(`${API_BASE}/v1/reports`, {
     method: "POST",
+    headers,
     body: formData,
   });
 
