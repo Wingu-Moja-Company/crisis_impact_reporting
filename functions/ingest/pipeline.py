@@ -174,6 +174,8 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
         }],
         "max_completion_tokens": 400,
         "response_format": {"type": "json_object"},
+        "temperature": 0,   # deterministic — same image → same score every time
+        "seed": 42,
     }).encode()
 
     url = f"{endpoint}/openai/deployments/{deploy}/chat/completions?api-version=2024-10-21"
