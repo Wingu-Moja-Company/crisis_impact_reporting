@@ -129,13 +129,17 @@ def _post_report(fields: dict, photo_bytes: bytes | None, submitter_id: str) -> 
     else:
         body += f"--{boundary}--\r\n".encode()
 
+    headers = {
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "X-Submitter-Id": submitter_id,
+    }
+    if api_key := os.environ.get("INGEST_API_KEY"):
+        headers["X-API-Key"] = api_key
+
     req = urllib.request.Request(
         f"{_api_base()}/v1/reports",
         data=body,
-        headers={
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "X-Submitter-Id": submitter_id,
-        },
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
