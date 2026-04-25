@@ -120,7 +120,7 @@ Returns the full append-only version history for a building, ordered by `submitt
 ### CAP alert feed
 
 ```
-GET /feeds/cap/{crisis_event_id}.xml
+GET /v1/feeds/cap/{crisis_event_id}.xml
 ```
 
 Common Alerting Protocol v1.2 (ISO 22324) feed. Updated every 5 minutes. Includes only `complete` (Grade 3) damage reports.

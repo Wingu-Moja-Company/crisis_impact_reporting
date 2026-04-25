@@ -28,10 +28,10 @@ This document describes how platform report fields map to humanitarian data stan
 ## Dedicated export endpoint
 
 ```
-GET /api/v1/export/{crisis_event_id}
+GET /api/v1/reports?crisis_event_id={crisis_event_id}&format=geojson
 ```
 
-Returns a GeoJSON FeatureCollection with standardised property names, compatible with QGIS, ArcGIS, and OCHA HDX.
+Returns a GeoJSON FeatureCollection with standardised property names, compatible with QGIS, ArcGIS, and OCHA HDX. Use `format=csv` or `format=shapefile` for those formats.
 
 ## Infrastructure category codes
 

@@ -1,10 +1,63 @@
 # Deployment — 48-Hour Crisis Runbook
 
+## Architecture overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Azure Static Web Apps (West Europe)                            │
+│  PWA (reporter)        swa-crisis-pwa-ob7ravt3zfbzi             │
+│  Dashboard (ops)       swa-crisis-dashboard-ob7ravt3zfbzi       │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │ HTTPS
+┌───────────────────────▼─────────────────────────────────────────┐
+│  Azure Functions — func-crisis-pipeline-ob7ravt3zfbzi           │
+│  Python 3.12 · Consumption plan (dev) / EP1 Premium (prod)      │
+│  Base URL: https://func-crisis-pipeline-ob7ravt3zfbzi           │
+│           .azurewebsites.net/api                                 │
+│                                                                  │
+│  Telegram bot — func-crisis-bot-ob7ravt3zfbzi                   │
+└──────┬────────────────┬───────────────┬──────────────────────────┘
+       │                │               │
+┌──────▼──────┐  ┌──────▼──────┐  ┌────▼──────────────────────────┐
+│  Cosmos DB  │  │  Blob Store │  │  PostgreSQL + PostGIS          │
+│  crisis-    │  │  (photos)   │  │  pg-crisis-footprints-         │
+│  platform   │  │             │  │  ob7ravt3zfbzi.postgres        │
+│             │  │             │  │  .database.azure.com           │
+└─────────────┘  └─────────────┘  └───────────────────────────────┘
+       │
+┌──────▼──────────────────────────────────────────────────────────┐
+│  Azure AI Services                                              │
+│  Computer Vision (photo analysis) · Translator (field notes)    │
+└─────────────────────────────────────────────────────────────────┘
+       │
+┌──────▼──────────────────────────────────────────────────────────┐
+│  Key Vault — kv-crisis-ob7ravt3zfbzi                            │
+│  All secrets injected via managed identity at runtime           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Active resource group:** `rg-crisis-platform-dev` (West Europe)
+
+| Resource | Name |
+|---|---|
+| Function App — pipeline | `func-crisis-pipeline-ob7ravt3zfbzi` |
+| Function App — Telegram bot | `func-crisis-bot-ob7ravt3zfbzi` |
+| Static Web App — PWA | `swa-crisis-pwa-ob7ravt3zfbzi` → `green-grass-00d127b03.7.azurestaticapps.net` |
+| Static Web App — Dashboard | `swa-crisis-dashboard-ob7ravt3zfbzi` → `salmon-desert-0b66f1503.7.azurestaticapps.net` |
+| Cosmos DB | database: `crisis-platform` |
+| PostgreSQL | `pg-crisis-footprints-ob7ravt3zfbzi.postgres.database.azure.com` · db: `crisis_footprints` |
+| Key Vault | `kv-crisis-ob7ravt3zfbzi` |
+| Seeded crisis event | `ke-flood-dev` |
+
+---
+
 ## Prerequisites
 
 - Azure CLI authenticated: `az login`
-- Access to `rg-crisis-platform-prod` resource group
-- GitHub repository secrets configured (see CI/CD section)
+- SWA CLI installed: `npm install -g @azure/static-web-apps-cli`
+- Azure Functions Core Tools v4: `npm install -g azure-functions-core-tools@4`
+- Access to `rg-crisis-platform-dev` (dev) or `rg-crisis-platform-prod` (prod)
+- GitHub repository secrets configured (see CI/CD section below)
 - Building footprints pre-loaded for the crisis region
 
 ---
@@ -62,15 +115,16 @@ python scripts/register_telegram_webhook.py --env prod
 python tests/e2e/smoke_test.py --env prod --crisis-id $CRISIS_EVENT_ID
 
 # Manual checklist:
-# [ ] PWA loads at https://report.crisisplatform.io
+# [ ] PWA loads and is installable as a PWA
 # [ ] Language toggle works for all 6 UN languages — test Arabic RTL
 # [ ] Building footprints visible on map for crisis region
 # [ ] Submit test report via Telegram bot — appears on dashboard within 5 seconds
 # [ ] Submit test report via PWA — appears on dashboard within 5 seconds
 # [ ] Test PWA offline: disable network, fill form, re-enable — report syncs
 # [ ] Export CSV and GeoJSON from dashboard — files download correctly
-# [ ] CAP feed returns valid XML at /feeds/cap/$CRISIS_EVENT_ID.xml
+# [ ] CAP feed returns valid XML at /v1/feeds/cap/$CRISIS_EVENT_ID.xml
 # [ ] Dashboard coverage heatmap shows data
+# [ ] Click a report in the feed — map popup is fully visible (not clipped at top)
 ```
 
 ---
@@ -80,6 +134,86 @@ python tests/e2e/smoke_test.py --env prod --crisis-id $CRISIS_EVENT_ID
 ```bash
 # Notify registered partner webhooks (OCHA HDX, IFRC GO, etc.)
 python scripts/notify_partners.py --crisis-id $CRISIS_EVENT_ID
+```
+
+---
+
+## CI/CD — automatic deployments on push to `main`
+
+The GitHub Actions pipeline (`.github/workflows/deploy-prod.yml`) runs on every push to `main` and deploys all four components in parallel, followed by a smoke test.
+
+| Job | What it deploys | How |
+|---|---|---|
+| `deploy-functions` | `functions/` → `func-crisis-pipeline-ob7ravt3zfbzi` | `azure/functions-action@v1` |
+| `deploy-functions` | `bot/` → `func-crisis-bot-ob7ravt3zfbzi` | `azure/functions-action@v1` |
+| `deploy-pwa` | `pwa/dist` → `swa-crisis-pwa-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
+| `deploy-dashboard` | `dashboard/dist` → `swa-crisis-dashboard-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
+| `smoke-test` | Runs after all three above | `tests/e2e/smoke_test.py` |
+
+### Required GitHub secrets
+
+Set under **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|---|---|
+| `AZURE_CREDENTIALS` | Service principal JSON (for `azure/login@v2`) |
+| `API_BASE_URL` | `https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api` |
+| `CRISIS_EVENT_ID` | Active crisis event ID e.g. `ke-flood-dev` |
+| `EXPORT_API_KEY` | API key injected into dashboard for data export |
+| `SWA_DEPLOYMENT_TOKEN_PWA` | Deployment token for `swa-crisis-pwa-ob7ravt3zfbzi` |
+| `SWA_DEPLOYMENT_TOKEN_DASHBOARD` | Deployment token for `swa-crisis-dashboard-ob7ravt3zfbzi` |
+
+---
+
+## Manual deployment (without CI/CD)
+
+### Azure Functions
+
+```bash
+cd functions
+func azure functionapp publish func-crisis-pipeline-ob7ravt3zfbzi --python
+```
+
+Uses remote Oryx build on Azure — no local Docker required. Repeat with `bot/` for the Telegram bot:
+
+```bash
+cd bot
+func azure functionapp publish func-crisis-bot-ob7ravt3zfbzi --python
+```
+
+### PWA
+
+```bash
+cd pwa
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api \
+VITE_CRISIS_EVENT_ID=ke-flood-dev \
+npm run build
+
+# Get deployment token
+SWA_TOKEN=$(az staticwebapp secrets list \
+  --name swa-crisis-pwa-ob7ravt3zfbzi \
+  --resource-group rg-crisis-platform-dev \
+  --query "properties.apiKey" -o tsv)
+
+swa deploy dist --deployment-token $SWA_TOKEN --env production
+```
+
+### Dashboard
+
+```bash
+cd dashboard
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api \
+VITE_CRISIS_EVENT_ID=ke-flood-dev \
+VITE_EXPORT_API_KEY=<key> \
+VITE_ADMIN_KEY_REQUIRED=true \
+npm run build
+
+SWA_TOKEN=$(az staticwebapp secrets list \
+  --name swa-crisis-dashboard-ob7ravt3zfbzi \
+  --resource-group rg-crisis-platform-dev \
+  --query "properties.apiKey" -o tsv)
+
+swa deploy dist --deployment-token $SWA_TOKEN --env production
 ```
 
 ---
@@ -115,48 +249,3 @@ az functionapp plan update \
   --resource-group rg-crisis-platform-prod \
   --sku EP1
 ```
-
----
-
-## CI/CD
-
-The GitHub Actions pipeline (`Azure/static-web-apps-deploy@v1`) handles PWA and dashboard deployments automatically on push to `main`.
-
-**Azure Functions** are deployed manually from the `functions/` directory using remote Oryx build:
-
-```bash
-cd functions
-func azure functionapp publish func-crisis-pipeline-ob7ravt3zfbzi --python
-```
-
-This triggers a remote build on Azure — no local Docker or pre-built packages required.
-
-Required GitHub secrets (set under Settings → Environments → production):
-
-| Secret | Value |
-|---|---|
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web Apps deployment token |
-| `VITE_API_BASE_URL` | `https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api` |
-| `CRISIS_EVENT_ID` | Active crisis event ID |
-
-### Active Resources (rg-crisis-platform-dev, West Europe)
-
-| Resource | Name |
-|---|---|
-| Function App | `func-crisis-pipeline-ob7ravt3zfbzi` |
-| Cosmos DB | database: `crisis-platform` |
-| PostgreSQL | `pg-crisis-footprints-ob7ravt3zfbzi.postgres.database.azure.com` |
-| Key Vault | `kv-crisis-ob7ravt3zfbzi` |
-
-### Working Endpoints
-
-| Endpoint | Description |
-|---|---|
-| `POST /api/v1/reports` | Ingest damage report |
-| `GET /api/v1/reports` | Export all reports (GeoJSON/CSV) |
-| `GET /api/v1/buildings/current` | Latest-per-building GeoJSON |
-| `GET /api/v1/buildings/summary` | Damage counts by level |
-| `GET /api/v1/buildings/{id}/history` | Building version history |
-| `GET /api/v1/crisis-events` | List crisis events |
-| `GET /api/v1/crisis-events/{id}/stats` | Report counts by damage level |
-| `GET /api/v1/feeds/cap/{id}.xml` | CAP 1.2 alert feed |
