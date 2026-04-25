@@ -125,6 +125,9 @@ python tests/e2e/smoke_test.py --env prod --crisis-id $CRISIS_EVENT_ID
 # [ ] CAP feed returns valid XML at /v1/feeds/cap/$CRISIS_EVENT_ID.xml
 # [ ] Dashboard coverage heatmap shows data
 # [ ] Click a report in the feed — map popup is fully visible (not clipped at top)
+# [ ] Click a marker directly on the map — popup also offsets correctly, card fully visible
+# [ ] Leave dashboard open for 30 s (one poll cycle) — map position holds, photo does not flash
+# [ ] Submit via Telegram bot — report appears on dashboard (bot must have INGEST_API_KEY set)
 ```
 
 ---
@@ -181,6 +184,16 @@ cd bot
 func azure functionapp publish func-crisis-bot-ob7ravt3zfbzi --python
 ```
 
+The bot function app needs `INGEST_API_KEY` in its app settings (it is sent as `X-API-Key`
+on every report submission). If deploying a fresh environment, set it once:
+
+```bash
+az functionapp config appsettings set \
+  --name func-crisis-bot-ob7ravt3zfbzi \
+  --resource-group rg-crisis-platform-dev \
+  --settings "INGEST_API_KEY=<value from func-crisis-pipeline app settings>"
+```
+
 ### PWA
 
 ```bash
@@ -200,13 +213,23 @@ swa deploy dist --deployment-token $SWA_TOKEN --env production
 
 ### Dashboard
 
+The dashboard requires three Vite env vars at build time. The easiest way to manage
+these for manual deploys is `dashboard/.env.local` (git-ignored):
+
+```ini
+# dashboard/.env.local
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
+VITE_EXPORT_API_KEY=ITMj89SPRNlx0NkCKcKE6w2DRLcD4wAldCdrGR2k0JU
+VITE_CRISIS_EVENT_ID=ke-flood-dev
+```
+
+> **Important:** `VITE_EXPORT_API_KEY` must be present at build time — it is baked into
+> the JS bundle by Vite. A build without it produces a dashboard that gets 401 from every
+> read endpoint and shows no reports.
+
 ```bash
 cd dashboard
-VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api \
-VITE_CRISIS_EVENT_ID=ke-flood-dev \
-VITE_EXPORT_API_KEY=<key> \
-VITE_ADMIN_KEY_REQUIRED=true \
-npm run build
+npm run build   # picks up .env.local automatically
 
 SWA_TOKEN=$(az staticwebapp secrets list \
   --name swa-crisis-dashboard-ob7ravt3zfbzi \
