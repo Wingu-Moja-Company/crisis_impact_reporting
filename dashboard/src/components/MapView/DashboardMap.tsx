@@ -38,6 +38,28 @@ const CHANNEL_ICON: Record<string, string> = {
   telegram: "📱", pwa: "🌐", sms: "💬", api: "🔌",
 };
 
+// ── Shared map-positioning helpers ────────────────────────────────────────────
+
+/** Fly to a lat/lon while offsetting the map centre upward so the popup card
+ *  that opens above the marker is fully visible rather than clipped at the top. */
+function flyToWithOffset(map: L.Map, lat: number, lon: number, zoom: number) {
+  const markerPx  = map.project([lat, lon], zoom);
+  const containerH = map.getContainer().getBoundingClientRect().height;
+  // Shift centre up by 30 % → marker lands ~65 % down the screen
+  const centerPx  = markerPx.subtract([0, containerH * 0.3]);
+  map.flyTo(map.unproject(centerPx, zoom), zoom, { duration: 0.8 });
+}
+
+/** Smooth pan (no zoom change) with the same upward offset — used when the
+ *  user clicks a marker directly on the map. */
+function panToWithOffset(map: L.Map, lat: number, lon: number) {
+  const zoom      = map.getZoom();
+  const markerPx  = map.project([lat, lon], zoom);
+  const containerH = map.getContainer().getBoundingClientRect().height;
+  const centerPx  = markerPx.subtract([0, containerH * 0.3]);
+  map.panTo(map.unproject(centerPx, zoom), { animate: true, duration: 0.5 });
+}
+
 function esc(s: string | null | undefined): string {
   return (s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -181,6 +203,9 @@ export function DashboardMap({
   // report_id → circleMarker, so we can highlight / open popup on selection
   const markerIndex    = useRef<Map<string, L.CircleMarker>>(new Map());
   const initialFit     = useRef(false);
+  // tracks which selectedReportId we have already flown to — prevents the
+  // 30-second poll rebuild from re-flying and snapping the map back
+  const hasPositionedFor = useRef<string | null>(null);
 
   // Track language so markers (popup HTML) rebuild when language changes
   const [lang, setLang] = useState(i18n.language);
@@ -243,8 +268,15 @@ export function DashboardMap({
         fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
         weight:      isSelected ? 3 : 1.5,
       })
-        .bindPopup(reportPopup(r), { maxWidth: 260 })
+        .bindPopup(reportPopup(r), { maxWidth: 260, autoPan: false })
         .addTo(reportLayer.current!);
+
+      // Pan with offset when marker is clicked directly on the map,
+      // so the popup card is fully visible (same behaviour as sidebar click)
+      marker.on("click", () => {
+        if (!mapRef.current) return;
+        panToWithOffset(mapRef.current, lat, lon);
+      });
 
       markerIndex.current.set(r.report_id, marker);
     }
@@ -259,12 +291,18 @@ export function DashboardMap({
     // If a report was pre-selected (e.g. from ?report= URL param), fly to it now
     // that markers have been built. This handles the race where selectedReportId
     // is set before the REST fetch completes.
+    // On subsequent poll refreshes (hasPositionedFor already matches) we only
+    // re-open the popup — we do NOT fly again so the user's map position is kept.
     if (selectedReportId) {
       const selectedMarker = markerIndex.current.get(selectedReportId);
       const selectedReport = liveReports.find((r) => r.report_id === selectedReportId);
       if (selectedMarker && selectedReport?.coordinates) {
-        const [lon, lat] = selectedReport.coordinates;
-        mapRef.current.flyTo([lat, lon], Math.max(mapRef.current.getZoom(), 15), { duration: 0.8 });
+        if (hasPositionedFor.current !== selectedReportId) {
+          // First time we have this marker — fly with offset
+          const [lon, lat] = selectedReport.coordinates;
+          flyToWithOffset(mapRef.current, lat, lon, Math.max(mapRef.current.getZoom(), 15));
+          hasPositionedFor.current = selectedReportId;
+        }
         selectedMarker.openPopup();
         initialFit.current = true; // prevent fitBounds from overriding
       }
@@ -295,17 +333,11 @@ export function DashboardMap({
       (m as L.CircleMarker).setRadius(markerRadius(r?.damage_level ?? "unknown", sel));
     }
 
-    // Fly to and open popup — offset center downward so popup has room above marker
+    // Fly to with offset so popup card has room above the marker
     if (report?.coordinates) {
       const [lon, lat] = report.coordinates;
-      const map = mapRef.current;
-      const zoom = Math.max(map.getZoom(), 15);
-      const markerPx = map.project([lat, lon], zoom);
-      const containerH = map.getContainer().getBoundingClientRect().height;
-      // Shift map center up by 30% of container height so marker sits ~65% down
-      const centerPx = markerPx.subtract([0, containerH * 0.3]);
-      const centerLatLng = map.unproject(centerPx, zoom);
-      map.flyTo(centerLatLng, zoom, { duration: 0.8 });
+      flyToWithOffset(mapRef.current, lat, lon, Math.max(mapRef.current.getZoom(), 15));
+      hasPositionedFor.current = selectedReportId; // suppress poll-refresh re-fly
     }
     marker.openPopup();
   }, [selectedReportId]);
