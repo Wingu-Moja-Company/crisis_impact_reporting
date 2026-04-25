@@ -248,37 +248,68 @@ export function DashboardMap({
     ).addTo(mapRef.current);
   }, [footprints, selectedBuildingId]);
 
-  // ── Rebuild all report markers when the list changes ─────────────────────
+  // ── Diff-update report markers when the list changes ────────────────────
+  // We deliberately avoid clearLayers() on every poll — that destroys the open
+  // popup DOM node and causes the photo to flash as it reloads. Instead we:
+  //   • remove markers whose reports have gone away
+  //   • update style + popup content for existing markers in-place
+  //   • add markers for brand-new reports
+  // For the currently-open popup we skip setPopupContent so the image is
+  // never torn down while the user is looking at the card.
   useEffect(() => {
     if (!mapRef.current || !reportLayer.current) return;
 
-    reportLayer.current.clearLayers();
-    markerIndex.current.clear();
-
     const withCoords = liveReports.filter((r) => r.coordinates !== null);
-    if (withCoords.length === 0) return;
+    const incomingIds = new Set(withCoords.map((r) => r.report_id));
 
+    // 1. Remove stale markers
+    for (const [id, m] of markerIndex.current) {
+      if (!incomingIds.has(id)) {
+        reportLayer.current.removeLayer(m);
+        markerIndex.current.delete(id);
+      }
+    }
+
+    // 2. Update existing / add new
     for (const r of withCoords) {
       const [lon, lat] = r.coordinates!;
       const isSelected = r.report_id === selectedReportId;
-      const marker = L.circleMarker([lat, lon], {
-        radius:      markerRadius(r.damage_level, isSelected),
-        color:       isSelected ? "#fff" : DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
-        fillColor:   DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
-        fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
-        weight:      isSelected ? 3 : 1.5,
-      })
-        .bindPopup(reportPopup(r), { maxWidth: 260, autoPan: false })
-        .addTo(reportLayer.current!);
+      const existing   = markerIndex.current.get(r.report_id);
 
-      // Pan with offset when marker is clicked directly on the map,
-      // so the popup card is fully visible (same behaviour as sidebar click)
-      marker.on("click", () => {
-        if (!mapRef.current) return;
-        panToWithOffset(mapRef.current, lat, lon);
-      });
+      if (existing) {
+        // Update visual style in-place (no DOM change)
+        existing.setStyle({
+          radius:      markerRadius(r.damage_level, isSelected),
+          color:       isSelected ? "#fff" : DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
+          fillColor:   DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
+          fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
+          weight:      isSelected ? 3 : 1.5,
+        });
+        (existing as L.CircleMarker).setRadius(markerRadius(r.damage_level, isSelected));
+        // Only refresh popup HTML when it is NOT open — avoids destroying the
+        // img DOM node (and the photo flash) while the user is viewing the card
+        if (!existing.isPopupOpen()) {
+          existing.setPopupContent(reportPopup(r));
+        }
+      } else {
+        // Brand-new report — create marker from scratch
+        const marker = L.circleMarker([lat, lon], {
+          radius:      markerRadius(r.damage_level, isSelected),
+          color:       isSelected ? "#fff" : DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
+          fillColor:   DAMAGE_COLORS[r.damage_level] ?? DAMAGE_COLORS.unknown,
+          fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
+          weight:      isSelected ? 3 : 1.5,
+        })
+          .bindPopup(reportPopup(r), { maxWidth: 260, autoPan: false })
+          .addTo(reportLayer.current!);
 
-      markerIndex.current.set(r.report_id, marker);
+        marker.on("click", () => {
+          if (!mapRef.current) return;
+          panToWithOffset(mapRef.current, lat, lon);
+        });
+
+        markerIndex.current.set(r.report_id, marker);
+      }
     }
 
     // Auto-fit bounds on first load only (skip if a report is pre-selected from URL)
