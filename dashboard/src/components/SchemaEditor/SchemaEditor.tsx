@@ -15,10 +15,10 @@ import { FieldEditorModal } from "./FieldEditorModal";
 import "./SchemaEditor.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
-const LANGS = ["en", "fr", "ar", "sw", "es", "zh"] as const;
+const LANGS = ["en", "fr", "ar", "ru", "es", "zh"] as const;
 const LANG_NAMES: Record<string, string> = {
   en: "English", fr: "Français", ar: "العربية",
-  sw: "Kiswahili", es: "Español", zh: "中文",
+  ru: "Русский", es: "Español", zh: "中文",
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

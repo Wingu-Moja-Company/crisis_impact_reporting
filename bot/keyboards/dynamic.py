@@ -33,19 +33,19 @@ def _label(obj: dict, lang: str) -> str:
 
 _DONE: dict[str, str] = {
     "en": "Done ✓", "fr": "Terminé ✓", "ar": "تم ✓",
-    "sw": "Imekamilika ✓", "es": "Listo ✓", "zh": "完成 ✓",
+    "ru": "Готово ✓", "es": "Listo ✓", "zh": "完成 ✓",
 }
 _SKIP: dict[str, str] = {
     "en": "Skip →", "fr": "Passer →", "ar": "تخطى →",
-    "sw": "Ruka →", "es": "Omitir →", "zh": "跳过 →",
+    "ru": "Пропустить →", "es": "Omitir →", "zh": "跳过 →",
 }
 _YES: dict[str, str] = {
     "en": "Yes ✅", "fr": "Oui ✅", "ar": "نعم ✅",
-    "sw": "Ndiyo ✅", "es": "Sí ✅", "zh": "是 ✅",
+    "ru": "Да ✅", "es": "Sí ✅", "zh": "是 ✅",
 }
 _NO: dict[str, str] = {
     "en": "No ❌", "fr": "Non ❌", "ar": "لا ❌",
-    "sw": "Hapana ❌", "es": "No ❌", "zh": "否 ❌",
+    "ru": "Нет ❌", "es": "No ❌", "zh": "否 ❌",
 }
 
 
@@ -167,7 +167,7 @@ def field_question(field: dict, lang: str, idx: int, total: int) -> str:
     if not field.get("required", True):
         optional_hints = {
             "en": " (optional)", "fr": " (optionnel)", "ar": " (اختياري)",
-            "sw": " (si lazima)", "es": " (opcional)", "zh": " （可选）",
+            "ru": " (необязательно)", "es": " (opcional)", "zh": " （可选）",
         }
         optional_hint = optional_hints.get(lang, " (optional)")
     return f"({idx + 1}/{total}) {question}{optional_hint}"

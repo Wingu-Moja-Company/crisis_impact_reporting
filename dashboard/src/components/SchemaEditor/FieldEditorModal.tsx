@@ -7,10 +7,10 @@
 import { useState } from "react";
 import type { SchemaField, SchemaOption } from "../../hooks/useSchema";
 
-const LANGS = ["en", "fr", "ar", "sw", "es", "zh"] as const;
+const LANGS = ["en", "fr", "ar", "ru", "es", "zh"] as const;
 const LANG_NAMES: Record<string, string> = {
   en: "English", fr: "Français", ar: "العربية",
-  sw: "Kiswahili", es: "Español", zh: "中文",
+  ru: "Русский", es: "Español", zh: "中文",
 };
 
 function emptyLabels(): Record<string, string> {

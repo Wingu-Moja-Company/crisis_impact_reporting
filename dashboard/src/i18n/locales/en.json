@@ -72,9 +72,9 @@
       "other": "Other"
     },
     "popup": {
-      "grade_minimal": "Grade 1 — Cosmetic damage",
-      "grade_partial": "Grade 2 — Repairable",
-      "grade_complete": "Grade 3 — Structurally unsafe",
+      "grade_minimal": "Minimal",
+      "grade_partial": "Partial",
+      "grade_complete": "Complete",
       "no_photo": "No photo submitted",
       "debris": "Debris clearing required",
       "three_word": "3-word code",
