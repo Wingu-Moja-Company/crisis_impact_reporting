@@ -168,9 +168,8 @@ export function FieldEditorModal({ field, nextOrder, onSave, onClose }: Props) {
               {options.map((opt, idx) => (
                 <div key={idx} className="sef-option-block">
                   <div className="sef-option-header">
-                    <span className="sef-option-num">#{idx + 1}</span>
                     <label className="ap-label ap-grow">
-                      Option ID
+                      Option ID #{idx + 1}
                       <input
                         className="ap-input ap-mono ap-short"
                         value={opt.value}

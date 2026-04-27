@@ -327,8 +327,8 @@
 /* ── Field editor modal overrides ────────────────────────────────────────── */
 
 .sef-modal {
-  width: 680px;
-  max-width: 95vw;
+  width: 820px;
+  max-width: 96vw;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -358,13 +358,8 @@
 
 .sef-option-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.sef-option-num {
-  font-size: 11px;
-  color: #9ca3af;
-  flex-shrink: 0;
-}

@@ -294,7 +294,7 @@ select.ap-input {
 .ap-row {
   display: flex;
   gap: .75rem;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .ap-section-title {
