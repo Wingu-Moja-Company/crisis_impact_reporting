@@ -269,12 +269,25 @@
   width: 100%;
   box-sizing: border-box;
   background: #fff;
+  /* Normalise height for both <input> and <select> */
+  height: 2.25rem;
+  appearance: none;
+  -webkit-appearance: none;
+  line-height: 1.25;
+}
+
+/* Re-add the dropdown arrow for <select> elements */
+select.ap-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .6rem center;
+  padding-right: 2rem;
 }
 
 .ap-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.2); }
 
 .ap-mono { font-family: ui-monospace, monospace; }
-.ap-short { width: 80px; }
+.ap-short { width: 160px; }
 .ap-grow { flex: 1; }
 .ap-hint { font-size: .72rem; color: #9ca3af; font-weight: 400; margin-top: -2px; }
 
