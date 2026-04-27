@@ -160,7 +160,10 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
         `${API_BASE}/v1/admin/crisis-events/${encodeURIComponent(crisisEventId)}/schema/history`,
         { headers: authHeaders },
       );
-      if (res.ok) setHistory(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(Array.isArray(data) ? data : (data.versions ?? []));
+      }
     } catch { /* ignore */ }
     finally { setHistoryLoading(false); }
   }, [crisisEventId, adminKey]);
