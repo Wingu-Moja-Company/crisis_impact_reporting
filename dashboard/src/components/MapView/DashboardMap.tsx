@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { LiveReport } from "../../hooks/useLiveReports";
+import type { FormSchema } from "../../hooks/useSchema";
+import { getSchemaLabel } from "../../hooks/useSchema";
 import i18n from "../../i18n";
 
 interface BuildingFeature extends GeoJSON.Feature {
@@ -20,6 +22,8 @@ interface Props {
   selectedBuildingId: string | null;
   selectedReportId: string | null;
   onBuildingSelect: (id: string) => void;
+  /** Dynamic form schema — used to label custom field responses in popups */
+  schema?: FormSchema | null;
 }
 
 const DAMAGE_COLORS: Record<string, string> = {
@@ -74,15 +78,28 @@ function timeAgoPopup(iso: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function reportPopup(r: LiveReport): string {
+function reportPopup(r: LiveReport, schema?: FormSchema | null): string {
   const t        = (key: string, opts?: Record<string, unknown>): string => String(i18n.t(key, opts as never));
+  const lang     = i18n.language?.slice(0, 2) || "en";
   const grade    = t(`popup.grade_${r.damage_level}`, { defaultValue: r.damage_level.toUpperCase() });
   const timeStr  = r.submitted_at ? timeAgoPopup(r.submitted_at) : "—";
+
+  // Infrastructure types — use schema labels if available
+  const infraOptions = schema?.system_fields?.infrastructure_type?.options;
+  const infraLabels = Array.isArray(infraOptions)
+    ? Object.fromEntries((infraOptions as Array<{ value: string; labels: Record<string, string> }>)
+        .map((o) => [o.value, getSchemaLabel(o.labels, lang)]))
+    : null;
   const infra    = r.infrastructure_types?.length
-    ? r.infrastructure_types.map((it) => esc(t(`infra.${it}`, { defaultValue: it }))).join(", ")
+    ? r.infrastructure_types.map((it) =>
+        esc(infraLabels?.[it] ?? t(`infra.${it}`, { defaultValue: it }))
+      ).join(", ")
     : "—";
-  const nature   = r.crisis_nature
-    ? esc(t(`nature.${r.crisis_nature}`, { defaultValue: r.crisis_nature }))
+
+  // Crisis nature — read from responses (new) or legacy field (old)
+  const crisisNature = (r.responses?.["crisis_nature"] as string) || r.crisis_nature;
+  const nature   = crisisNature
+    ? esc(t(`nature.${crisisNature}`, { defaultValue: crisisNature }))
     : "—";
   const chanIcon = CHANNEL_ICON[r.channel] ?? "📡";
   const tier     = r.submitter_tier === "verified"
@@ -110,6 +127,44 @@ function reportPopup(r: LiveReport): string {
 
   const descHtml = r.description_en
     ? `<div class="pp-desc">${esc(r.description_en)}</div>` : "";
+
+  // Custom field responses — shown when schema is available and report has responses
+  const customFieldsHtml = (() => {
+    const fields = schema?.custom_fields ?? [];
+    if (fields.length === 0) return "";
+    const responses = r.responses ?? {};
+
+    // Skip fields that are already shown in the fixed section above
+    const SKIP_IDS = new Set(["crisis_nature", "requires_debris_clearing"]);
+
+    const rows = fields
+      .filter((f) => !SKIP_IDS.has(f.id) && responses[f.id] !== undefined && responses[f.id] !== null)
+      .map((field) => {
+        const label = esc(getSchemaLabel(field.labels, lang));
+        const raw = responses[field.id];
+        let valueStr = "";
+        if (Array.isArray(raw)) {
+          // multiselect — look up labels from schema options
+          const optMap = Object.fromEntries(
+            (field.options ?? []).map((o) => [o.value, getSchemaLabel(o.labels, lang)])
+          );
+          valueStr = esc((raw as string[]).map((v) => optMap[v] ?? v).join(", "));
+        } else if (typeof raw === "boolean" || raw === "true" || raw === "false") {
+          const boolVal = raw === true || raw === "true";
+          valueStr = boolVal ? "✅" : "❌";
+        } else {
+          // select — look up label
+          const optMap = Object.fromEntries(
+            (field.options ?? []).map((o) => [o.value, getSchemaLabel(o.labels, lang)])
+          );
+          valueStr = esc(optMap[String(raw)] ?? String(raw));
+        }
+        return `<div class="pp-custom-row"><span class="pp-custom-label">${label}</span> ${valueStr}</div>`;
+      });
+
+    if (rows.length === 0) return "";
+    return `<div class="pp-custom-fields">${rows.join("")}</div>`;
+  })();
 
   // AI assessment card — only shown when the model returned a result
   const hasAi = r.ai_vision_confidence != null && r.ai_vision_confidence > 0;
@@ -185,6 +240,7 @@ function reportPopup(r: LiveReport): string {
         <div class="pp-row">${chanIcon} ${esc(r.channel)} · ${tier}</div>
         ${locationHtml}
       </div>
+      ${customFieldsHtml}
       ${aiHtml}
       ${descHtml}
       <div class="pp-id">${esc(r.report_id)}</div>
@@ -194,7 +250,7 @@ function reportPopup(r: LiveReport): string {
 
 export function DashboardMap({
   center, zoom = 13, footprints, liveReports,
-  selectedBuildingId, selectedReportId, onBuildingSelect,
+  selectedBuildingId, selectedReportId, onBuildingSelect, schema,
 }: Props) {
   const containerRef   = useRef<HTMLDivElement>(null);
   const mapRef         = useRef<L.Map | null>(null);
@@ -289,7 +345,7 @@ export function DashboardMap({
         // Only refresh popup HTML when it is NOT open — avoids destroying the
         // img DOM node (and the photo flash) while the user is viewing the card
         if (!existing.isPopupOpen()) {
-          existing.setPopupContent(reportPopup(r));
+          existing.setPopupContent(reportPopup(r, schema));
         }
       } else {
         // Brand-new report — create marker from scratch
@@ -300,7 +356,7 @@ export function DashboardMap({
           fillOpacity: isSelected ? 1 : (selectedReportId ? 0.35 : 0.75),
           weight:      isSelected ? 3 : 1.5,
         })
-          .bindPopup(reportPopup(r), { maxWidth: 260, autoPan: false })
+          .bindPopup(reportPopup(r, schema), { maxWidth: 260, autoPan: false })
           .addTo(reportLayer.current!);
 
         marker.on("click", () => {
@@ -338,7 +394,7 @@ export function DashboardMap({
         initialFit.current = true; // prevent fitBounds from overriding
       }
     }
-  }, [liveReports, lang]);
+  }, [liveReports, lang, schema]);
 
   // ── React to selection change: fly to marker + open popup ─────────────────
   useEffect(() => {
@@ -428,6 +484,12 @@ export function DashboardMap({
         .pp-pri-med  { background: #fef9c3; color: #854d0e; }
         .pp-pri-high { background: #ffedd5; color: #9a3412; }
         .pp-pri-crit { background: #fee2e2; color: #7f1d1d; }
+
+        /* Dynamic custom field responses */
+        .pp-custom-fields { border-top: 1px solid #eee; padding-top: 6px; margin-top: 4px;
+          display: flex; flex-direction: column; gap: 2px; }
+        .pp-custom-row { font-size: 11px; color: #444; display: flex; gap: 4px; }
+        .pp-custom-label { font-weight: 600; color: #555; flex-shrink: 0; }
 
         /* Reporter description */
         .pp-desc { font-size: 12px; color: #333; border-top: 1px solid #eee;

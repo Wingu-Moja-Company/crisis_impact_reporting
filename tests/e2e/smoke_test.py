@@ -28,10 +28,15 @@ def check(name: str, condition: bool, detail: str = "") -> None:
 
 
 _EXPORT_API_KEY = os.environ.get("EXPORT_API_KEY", "")
+_INGEST_API_KEY = os.environ.get("INGEST_API_KEY", _EXPORT_API_KEY)
 
 
 def _api_headers() -> dict:
     return {"X-API-Key": _EXPORT_API_KEY} if _EXPORT_API_KEY else {}
+
+
+def _ingest_headers() -> dict:
+    return {"X-API-Key": _INGEST_API_KEY} if _INGEST_API_KEY else {}
 
 
 def get(url: str, timeout: int = 10) -> tuple[int, dict | str]:
@@ -58,10 +63,13 @@ def post(url: str, fields: dict, timeout: int = 30) -> tuple[int, dict]:
         )
     body = "".join(body_parts).encode() + f"--{boundary}--\r\n".encode()
 
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    headers.update(_ingest_headers())
+
     req = urllib.request.Request(
         url,
         data=body,
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        headers=headers,
         method="POST",
     )
     try:
@@ -126,6 +134,76 @@ def run(api_base: str, crisis_event_id: str) -> None:
     print("\nValidation")
     status, _ = get(f"{api_base}/v1/reports?format=geojson")
     check("GET /v1/reports without crisis_event_id returns 400", status == 400, f"got {status}")
+
+    # 8. Schema API — get current schema
+    print("\nSchema API")
+    status, body = get(f"{api_base}/v1/crisis-events/{crisis_event_id}/schema")
+    check("GET /v1/crisis-events/{id}/schema returns 200", status == 200, f"got {status}")
+    check(
+        "Schema has system_fields",
+        isinstance(body, dict) and "system_fields" in body,
+        str(body)[:120] if isinstance(body, dict) else str(body),
+    )
+    check(
+        "Schema has custom_fields",
+        isinstance(body, dict) and "custom_fields" in body,
+    )
+    check(
+        "Schema has version",
+        isinstance(body, dict) and body.get("version") is not None,
+    )
+    check(
+        "system_fields has damage_level",
+        isinstance(body, dict) and "damage_level" in body.get("system_fields", {}),
+    )
+    check(
+        "system_fields has infrastructure_type",
+        isinstance(body, dict) and "infrastructure_type" in body.get("system_fields", {}),
+    )
+
+    # 9. Schema version_only endpoint
+    status, body = get(f"{api_base}/v1/crisis-events/{crisis_event_id}/schema?version_only=true")
+    check("GET /schema?version_only=true returns 200", status == 200, f"got {status}")
+    check(
+        "version_only response has version key",
+        isinstance(body, dict) and "version" in body,
+    )
+
+    # 10. Submit report with schema_version + responses (new format)
+    print("\nSchema-aware report submission")
+    status, body = post(f"{api_base}/v1/reports", {
+        "damage_level":         "partial",
+        "infrastructure_types": '["residential"]',
+        "crisis_event_id":      crisis_event_id,
+        "channel":              "pwa",
+        "gps_lat":              "-1.2577",
+        "gps_lon":              "36.8614",
+        "schema_version":       "1",
+        "responses":            '{"crisis_nature":"flood","requires_debris_clearing":false}',
+    })
+    check("POST /v1/reports with schema_version+responses returns 201", status == 201, f"got {status}")
+    check("New-format response has report_id", isinstance(body, dict) and "report_id" in body)
+
+    # 11. GeoJSON has schema_version and flattened responses
+    print("\nGeoJSON schema integration")
+    status, body = get(
+        f"{api_base}/v1/reports?crisis_event_id={crisis_event_id}&format=geojson&limit=5"
+    )
+    check("GET /v1/reports GeoJSON still 200 after schema", status == 200, f"got {status}")
+    if isinstance(body, dict) and body.get("features"):
+        first = body["features"][0]
+        props = first.get("properties", {})
+        check(
+            "GeoJSON feature has schema_version property",
+            "schema_version" in props,
+            f"keys: {list(props.keys())[:10]}",
+        )
+    else:
+        check("GeoJSON has at least one feature", False, "No features in collection")
+
+    # 12. Schema for unknown event → 404
+    status, _ = get(f"{api_base}/v1/crisis-events/nonexistent-smoke-test-event/schema")
+    check("GET schema for unknown event returns 404", status == 404, f"got {status}")
 
     # Summary
     print(f"\n{'─' * 50}")

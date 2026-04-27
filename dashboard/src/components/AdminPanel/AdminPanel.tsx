@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { SchemaEditor } from "../SchemaEditor/SchemaEditor";
 import "./AdminPanel.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -271,6 +272,7 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [schemaEditorId, setSchemaEditorId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -434,6 +436,13 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                     {t("admin.view_dashboard")}
                   </button>
                 )}
+                <button
+                  className="ap-btn ap-btn--sm ap-btn--ghost"
+                  onClick={() => setSchemaEditorId(ev.id)}
+                  title="Edit form schema"
+                >
+                  📋 {t("admin.schema_editor", { defaultValue: "Schema" })}
+                </button>
                 {ev.status === "active" ? (
                   <button
                     className="ap-btn ap-btn--sm ap-btn--warn"
@@ -487,6 +496,14 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
           adminKey={adminKey}
           onCreated={load}
           onClose={() => setShowCreate(false)}
+        />
+      )}
+
+      {schemaEditorId && (
+        <SchemaEditor
+          crisisEventId={schemaEditorId}
+          adminKey={adminKey}
+          onClose={() => setSchemaEditorId(null)}
         />
       )}
     </div>

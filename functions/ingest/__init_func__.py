@@ -104,20 +104,31 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if photo_bytes:
             photo_bytes = photo_bytes.read()
 
+        # requires_debris_clearing — optional in new schema (lives in responses)
+        _rdc_raw = form.get("requires_debris_clearing")
+        _rdc = _rdc_raw.lower() in ("true", "1", "yes") if _rdc_raw else None
+
         submission = DamageReportSubmission(
             damage_level=form["damage_level"],
             infrastructure_types=json.loads(form["infrastructure_types"]),
-            crisis_nature=form["crisis_nature"],
-            requires_debris_clearing=form["requires_debris_clearing"].lower() == "true",
             crisis_event_id=form["crisis_event_id"],
             channel=form["channel"],
+            # Legacy fields — present in old bot/PWA builds; absent in new schema-aware builds
+            crisis_nature=form.get("crisis_nature") or None,
+            requires_debris_clearing=_rdc,
+            # New schema fields — present in schema-aware builds
+            schema_version=int(form["schema_version"]) if form.get("schema_version") else None,
+            responses=json.loads(form["responses"]) if form.get("responses") else None,
+            # Location
             gps_lat=float(form["gps_lat"]) if form.get("gps_lat") else None,
             gps_lon=float(form["gps_lon"]) if form.get("gps_lon") else None,
             what3words_address=form.get("what3words_address"),
             location_description=form.get("location_description"),
+            # Extras
             description=form.get("description"),
             infrastructure_name=form.get("infrastructure_name"),
             other_infra_description=form.get("other_infra_description"),
+            # Deprecated — kept for very old clients that still send modular_fields
             modular_fields=json.loads(form["modular_fields"]) if form.get("modular_fields") else None,
         )
     except (KeyError, ValueError) as exc:

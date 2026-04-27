@@ -15,9 +15,11 @@ export interface LiveReport {
   damage_level: string;
   infrastructure_types: string[];
   infrastructure_name: string | null;
+  /** Legacy field — also available in responses.crisis_nature for new reports */
   crisis_nature: string;
   channel: string;
   description_en: string | null;
+  /** Legacy field — also available in responses.requires_debris_clearing for new reports */
   requires_debris_clearing: boolean;
   ai_vision_confidence: number | null;
   ai_vision_suggested_level: string | null;
@@ -32,6 +34,10 @@ export interface LiveReport {
   submitter_tier: "verified" | "public" | string;
   photo_url: string | null;
   coordinates: [number, number] | null; // [lon, lat]
+  /** Dynamic custom field responses (new schema-driven format) */
+  responses: Record<string, unknown>;
+  /** Schema version the report was submitted against (null for pre-schema reports) */
+  schema_version: number | null;
 }
 
 /** Map a GeoJSON feature (from /v1/reports) to LiveReport */
@@ -62,6 +68,9 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
     submitter_tier:           String(p.submitter_tier ?? "public"),
     photo_url:                (p.photo_url as string) ?? null,
     coordinates:              geom?.coordinates ? [geom.coordinates[0], geom.coordinates[1]] : null,
+    // Dynamic schema fields — present for new reports, empty for legacy ones
+    responses:                (p.responses as Record<string, unknown>) ?? {},
+    schema_version:           (p.schema_version as number) ?? null,
   };
 }
 

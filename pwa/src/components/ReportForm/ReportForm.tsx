@@ -1,51 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useGeolocation } from "../../hooks/useGeolocation";
+import { useSchema } from "../../hooks/useSchema";
 import { DamageSelector, type DamageLevel } from "../DamageSelector/DamageSelector";
-import { InfraTypeSelector, type InfraType } from "../InfraTypeSelector/InfraTypeSelector";
+import { InfraTypeSelector } from "../InfraTypeSelector/InfraTypeSelector";
+import { CustomFieldRenderer } from "../CustomFieldRenderer/CustomFieldRenderer";
 import { enqueueReport } from "../../services/pouchdb";
 import { submitReport } from "../../services/api";
 import { syncQueuedReports } from "../../services/sync";
 import { geocodeLocation, type GeocodeResult } from "../../services/geocode";
-
-const CRISIS_NATURES = [
-  "earthquake", "flood", "tsunami", "hurricane", "wildfire",
-  "explosion", "chemical", "conflict", "civil_unrest",
-] as const;
-
-const ELECTRICITY_OPTIONS = [
-  "no_damage", "minor", "moderate", "severe", "destroyed", "unknown",
-] as const;
-
-const HEALTH_OPTIONS = [
-  "fully", "partially", "largely_disrupted", "not_functioning", "unknown",
-] as const;
-
-const HEALTH_VALUES: Record<string, string> = {
-  fully:              "fully_functional",
-  partially:          "partially_functional",
-  largely_disrupted:  "largely_disrupted",
-  not_functioning:    "not_functioning",
-  unknown:            "unknown",
-};
-
-const NEEDS_OPTIONS = [
-  "food_water", "cash", "healthcare", "shelter", "livelihoods",
-  "wash", "basic_services", "protection", "community", "other",
-] as const;
-
-const NEEDS_VALUES: Record<string, string> = {
-  food_water:     "food_water",
-  cash:           "cash_financial",
-  healthcare:     "healthcare",
-  shelter:        "shelter",
-  livelihoods:    "livelihoods",
-  wash:           "wash",
-  basic_services: "basic_services",
-  protection:     "protection",
-  community:      "community_support",
-  other:          "other",
-};
+import { getLabel, type SchemaOption } from "../../services/schema";
 
 interface Props {
   crisisEventId: string;
@@ -53,46 +17,64 @@ interface Props {
 }
 
 export function ReportForm({ crisisEventId, onSuccess }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.slice(0, 2) || "en";
   const { coords, loading: gpsLoading, request: requestGps } = useGeolocation();
+  const { schema, schemaLoading, isFallback, schemaVersion } = useSchema(crisisEventId);
 
+  // ── Mandatory system fields ────────────────────────────────────────────────
   const [photo, setPhoto] = useState<string | null>(null);
   const [damageLevel, setDamageLevel] = useState<DamageLevel | null>(null);
-  const [infraTypes, setInfraTypes] = useState<InfraType[]>([]);
-  const [crisisNature, setCrisisNature] = useState("");
-  const [debrisRequired, setDebrisRequired] = useState<boolean | null>(null);
-  const [electricityStatus, setElectricityStatus] = useState("");
-  const [healthServices, setHealthServices] = useState("");
-  const [pressingNeeds, setPressingNeeds] = useState<string[]>([]);
-  const [description, setDescription] = useState("");
+  const [infraTypes, setInfraTypes] = useState<string[]>([]);
 
+  // ── Dynamic custom field responses ────────────────────────────────────────
+  const [responses, setResponses] = useState<Record<string, unknown>>({});
+
+  // ── Location ──────────────────────────────────────────────────────────────
   const [locationText, setLocationText] = useState("");
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
   const [geocodeFailed, setGeocodeFailed] = useState(false);
 
+  // ── Submission state ──────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<{ reportId: string; offline: boolean } | null>(null);
   const [retrying, setRetrying] = useState(false);
 
+  // ── Schema version banner ─────────────────────────────────────────────────
+  const [schemaUpdated, setSchemaUpdated] = useState(false);
+  const firstVersion = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (schemaVersion === null) return;
+    if (firstVersion.current === null) {
+      firstVersion.current = schemaVersion;
+    } else if (schemaVersion !== firstVersion.current) {
+      setSchemaUpdated(true);
+    }
+  }, [schemaVersion]);
+
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function setResponse(fieldId: string, value: unknown) {
+    setResponses((prev) => ({ ...prev, [fieldId]: value }));
+  }
 
   function resetForm() {
     setPhoto(null);
     setDamageLevel(null);
     setInfraTypes([]);
-    setCrisisNature("");
-    setDebrisRequired(null);
-    setElectricityStatus("");
-    setHealthServices("");
-    setPressingNeeds([]);
-    setDescription("");
+    setResponses({});
     setLocationText("");
     setGeocodeResult(null);
     setGeocodeFailed(false);
     setSubmitError(null);
     setResult(null);
+    setSchemaUpdated(false);
+    firstVersion.current = null;
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -118,9 +100,27 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     }
   }
 
+  // Check all required custom fields are answered
+  function customFieldsComplete(): boolean {
+    if (!schema) return true;
+    for (const field of schema.custom_fields) {
+      if (field.required === false) continue;
+      const val = responses[field.id];
+      if (val === undefined || val === null || val === "") return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+    }
+    return true;
+  }
+
+  const canSubmit =
+    !!damageLevel &&
+    infraTypes.length > 0 &&
+    customFieldsComplete() &&
+    !submitting;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null || !electricityStatus || !healthServices || pressingNeeds.length === 0) return;
+    if (!canSubmit) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -129,20 +129,14 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     const finalLon = coords?.lon ?? geocodeResult?.lon;
 
     const fields: Record<string, string> = {
-      damage_level:             damageLevel,
-      infrastructure_types:     JSON.stringify(infraTypes),
-      crisis_nature:            crisisNature,
-      requires_debris_clearing: String(debrisRequired),
-      crisis_event_id:          crisisEventId,
-      channel:                  "pwa",
-      modular_fields:           JSON.stringify({
-        electricity_status: electricityStatus,
-        health_services:    healthServices,
-        pressing_needs:     pressingNeeds,
-      }),
-      ...(description    && { description }),
+      damage_level:         damageLevel!,
+      infrastructure_types: JSON.stringify(infraTypes),
+      crisis_event_id:      crisisEventId,
+      channel:              "pwa",
+      responses:            JSON.stringify(responses),
+      ...(schemaVersion != null && { schema_version: String(schemaVersion) }),
       ...(finalLat != null && { gps_lat: String(finalLat), gps_lon: String(finalLon) }),
-      ...(locationText   && { location_description: locationText }),
+      ...(locationText && { location_description: locationText }),
     };
 
     try {
@@ -171,6 +165,8 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setRetrying(false);
     setResult(null);
   }
+
+  // ── Success screen ────────────────────────────────────────────────────────
 
   if (result) {
     return (
@@ -209,8 +205,55 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     );
   }
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+
+  if (schemaLoading && !schema) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--grey-500)" }}>
+        {t("form.loading_schema") || "Loading form…"}
+      </div>
+    );
+  }
+
+  // ── Schema-version update banner ──────────────────────────────────────────
+
+  const customFields = schema?.custom_fields ?? [];
+
+  // ── Damage level options from schema ─────────────────────────────────────
+
+  const damageLevelLabels = schema?.system_fields?.damage_level?.options as
+    | Record<string, Record<string, string>>
+    | undefined;
+
+  // ── Infrastructure type options from schema ───────────────────────────────
+
+  const infraOptions: SchemaOption[] = Array.isArray(
+    schema?.system_fields?.infrastructure_type?.options
+  )
+    ? (schema!.system_fields.infrastructure_type.options as SchemaOption[])
+    : [];
+
   return (
     <form className="report-form" onSubmit={handleSubmit}>
+
+      {/* Schema update banner */}
+      {schemaUpdated && (
+        <div style={{
+          background: "#fef9c3", border: "1px solid #d97706", borderRadius: "8px",
+          padding: ".75rem 1rem", marginBottom: "1rem", fontSize: ".85rem",
+        }}>
+          🔄 {t("form.schema_updated") || "The form has been updated. Please review your answers."}
+        </div>
+      )}
+
+      {isFallback && (
+        <div style={{
+          background: "#fef2f2", border: "1px solid #dc2626", borderRadius: "8px",
+          padding: ".75rem 1rem", marginBottom: "1rem", fontSize: ".85rem",
+        }}>
+          ⚠️ {t("form.schema_unavailable") || "Using simplified form — some questions may be missing."}
+        </div>
+      )}
 
       {/* Photo */}
       <div className="form-card">
@@ -278,105 +321,50 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         </div>
       </div>
 
-      {/* Damage level */}
+      {/* Damage level — mandatory system field */}
       <div className="form-card">
-        <span className="form-card-label">{t("form.section_damage")}</span>
-        <DamageSelector value={damageLevel} onChange={setDamageLevel} />
+        <span className="form-card-label">
+          {schema
+            ? getLabel(schema.system_fields?.damage_level?.labels, lang)
+            : t("form.section_damage")}
+        </span>
+        <DamageSelector
+          value={damageLevel}
+          onChange={setDamageLevel}
+          schemaOptions={damageLevelLabels}
+          lang={lang}
+        />
       </div>
 
-      {/* Infrastructure type */}
+      {/* Infrastructure type — mandatory system field */}
       <div className="form-card">
-        <span className="form-card-label">{t("form.section_infra")}</span>
-        <InfraTypeSelector selected={infraTypes} onChange={setInfraTypes} />
+        <span className="form-card-label">
+          {schema
+            ? getLabel(schema.system_fields?.infrastructure_type?.labels, lang)
+            : t("form.section_infra")}
+        </span>
+        <InfraTypeSelector
+          selected={infraTypes}
+          onChange={setInfraTypes}
+          schemaOptions={infraOptions.length > 0 ? infraOptions : undefined}
+          lang={lang}
+        />
       </div>
 
-      {/* Crisis nature */}
-      <div className="form-card">
-        <span className="form-card-label">{t("form.section_crisis")}</span>
-        <select
-          className="crisis-select"
-          value={crisisNature}
-          onChange={(e) => setCrisisNature(e.target.value)}
-          required
-        >
-          <option value="">{t("form.crisis_nature")}</option>
-          {CRISIS_NATURES.map((n) => (
-            <option key={n} value={n}>{t(`form.crisis_${n}`)}</option>
-          ))}
-        </select>
-      </div>
+      {/* Custom fields — dynamically rendered from schema */}
+      {customFields.map((field, idx) => (
+        <CustomFieldRenderer
+          key={field.id}
+          field={field}
+          value={responses[field.id]}
+          onChange={setResponse}
+          lang={lang}
+          index={idx + 1}
+          total={customFields.length}
+        />
+      ))}
 
-      {/* Debris */}
-      <div className="form-card">
-        <span className="form-card-label">{t("form.section_debris")}</span>
-        <div className="debris-options">
-          <label className={`debris-option yes ${debrisRequired === true ? "selected" : ""}`}>
-            <input type="radio" name="debris" onChange={() => setDebrisRequired(true)} />
-            ⚠️ {t("form.debris_yes")}
-          </label>
-          <label className={`debris-option no ${debrisRequired === false ? "selected" : ""}`}>
-            <input type="radio" name="debris" onChange={() => setDebrisRequired(false)} />
-            ✓ {t("form.debris_no")}
-          </label>
-        </div>
-      </div>
-
-      {/* Electricity */}
-      <div className="form-card">
-        <span className="form-card-label">{t("form.section_electricity")}</span>
-        <div className="assessment-options">
-          {ELECTRICITY_OPTIONS.map((opt) => (
-            <label key={opt} className={`assessment-option radio-opt ${electricityStatus === opt ? "selected" : ""}`}>
-              <input type="radio" name="electricity_status" value={opt} checked={electricityStatus === opt} onChange={() => setElectricityStatus(opt)} />
-              {t(`form.elec_${opt}`)}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Health services */}
-      <div className="form-card">
-        <span className="form-card-label">{t("form.section_health")}</span>
-        <div className="assessment-options">
-          {HEALTH_OPTIONS.map((opt) => (
-            <label key={opt} className={`assessment-option radio-opt ${healthServices === HEALTH_VALUES[opt] ? "selected" : ""}`}>
-              <input
-                type="radio"
-                name="health_services"
-                value={HEALTH_VALUES[opt]}
-                checked={healthServices === HEALTH_VALUES[opt]}
-                onChange={() => setHealthServices(HEALTH_VALUES[opt])}
-              />
-              {t(`form.health_${opt}`)}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Pressing needs */}
-      <div className="form-card">
-        <span className="form-card-label">{t("form.section_needs")}</span>
-        <div className="assessment-options">
-          {NEEDS_OPTIONS.map((opt) => {
-            const val = NEEDS_VALUES[opt];
-            return (
-              <label key={opt} className={`assessment-option checkbox-opt ${pressingNeeds.includes(val) ? "selected" : ""}`}>
-                <input
-                  type="checkbox"
-                  value={val}
-                  checked={pressingNeeds.includes(val)}
-                  onChange={(e) => setPressingNeeds(
-                    e.target.checked ? [...pressingNeeds, val] : pressingNeeds.filter((v) => v !== val)
-                  )}
-                />
-                {t(`form.needs_${opt}`)}
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Description */}
+      {/* Description (always optional, not in schema custom_fields) */}
       <div className="form-card">
         <span className="form-card-label">
           {t("form.section_description")}{" "}
@@ -385,8 +373,8 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
         <textarea
           className="description-textarea"
           placeholder={t("form.description_placeholder")}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={typeof responses["description"] === "string" ? responses["description"] : ""}
+          onChange={(e) => setResponse("description", e.target.value)}
           rows={3}
         />
       </div>
@@ -394,7 +382,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
       <button
         type="submit"
         className="submit-btn"
-        disabled={submitting || !damageLevel || infraTypes.length === 0 || !crisisNature || debrisRequired === null || !electricityStatus || !healthServices || pressingNeeds.length === 0}
+        disabled={!canSubmit}
       >
         {submitting ? t("form.submitting") : t("form.submit")}
       </button>

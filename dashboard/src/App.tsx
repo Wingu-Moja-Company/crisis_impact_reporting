@@ -12,6 +12,7 @@ import { AdminPanel } from "./components/AdminPanel/AdminPanel";
 import { LanguageToggle } from "./components/LanguageToggle/LanguageToggle";
 import { useLiveReports } from "./hooks/useLiveReports";
 import { useBuildings } from "./hooks/useBuildings";
+import { useSchema } from "./hooks/useSchema";
 
 const DEFAULT_CRISIS_ID = import.meta.env.VITE_CRISIS_EVENT_ID ?? "ke-flood-dev";
 const MAP_CENTER: [number, number] = [-1.2577, 36.8614];
@@ -45,6 +46,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen]             = useState(false);
 
   const { reports: liveReports, connected, lastFetched } = useLiveReports(crisisEventId);
+  const { schema } = useSchema(crisisEventId);
   const {
     featureCollection: buildingsGeoJSON,
     summary: buildingsSummary,
@@ -100,6 +102,7 @@ export default function App() {
         liveCount={liveReports.length}
         wsConnected={connected}
         lastFetched={lastFetched}
+        schema={schema}
       />
 
       <div className="dashboard-body">
@@ -131,6 +134,7 @@ export default function App() {
               reports={liveReports}
               selectedReportId={selectedReport}
               onSelect={handleReportSelect}
+              schema={schema}
             />
           )}
         </aside>
@@ -143,6 +147,7 @@ export default function App() {
               selectedBuildingId={selectedBuilding}
               selectedReportId={selectedReport}
               onBuildingSelect={handleBuildingSelect}
+              schema={schema}
             />
           ) : view === "heatmap" ? (
             <CoverageHeatmap crisisEventId={crisisEventId} center={MAP_CENTER} />

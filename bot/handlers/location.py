@@ -9,7 +9,8 @@ from telegram import ReplyKeyboardRemove, Update
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
-from keyboards import damage_level
+from keyboards import dynamic
+from schema import fallback_schema
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +105,12 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=ReplyKeyboardRemove(),
     )
 
-    # Show damage level selector
+    # Show damage level selector (schema-driven; falls back to cached schema or hardcoded)
+    schema = context.user_data.get("schema") or fallback_schema()
+    damage_question = dynamic.system_field_question("damage_level", schema, lang)
     await update.message.reply_text(
-        t("select_damage_level", lang),
-        reply_markup=damage_level.build(lang),
+        damage_question,
+        reply_markup=dynamic.build_damage_level(schema, lang),
     )
 
 

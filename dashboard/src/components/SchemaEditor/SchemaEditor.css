@@ -1,0 +1,370 @@
+/* ── Schema Editor Panel ──────────────────────────────────────────────────── */
+
+.sef-panel {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  width: 780px;
+  max-width: 96vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+/* Overlay re-use (from AdminPanel) — ap-overlay centers children */
+
+.sef-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sef-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.sef-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sef-version-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+
+.sef-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 24px;
+  gap: 0;
+}
+
+.sef-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: -1px;
+}
+
+.sef-tab:hover { color: #111; }
+.sef-tab--active { color: #1a56db; border-bottom-color: #1a56db; font-weight: 600; }
+
+/* ── Body (scrollable) ────────────────────────────────────────────────────── */
+
+.sef-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.sef-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sef-section-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  margin: 16px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sef-section-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 8px 0 4px;
+  font-weight: 500;
+}
+
+.sef-locked {
+  font-size: 11px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 400;
+}
+
+.sef-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 32px;
+  font-size: 13px;
+}
+
+.sef-loading {
+  text-align: center;
+  color: #9ca3af;
+  padding: 32px;
+}
+
+.sef-error {
+  color: #dc2626;
+  padding: 24px;
+  font-size: 13px;
+}
+
+/* ── Custom field rows ────────────────────────────────────────────────────── */
+
+.sef-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fafafa;
+  gap: 12px;
+}
+
+.sef-field-info { flex: 1; min-width: 0; }
+
+.sef-field-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.sef-field-id {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.sef-field-type {
+  font-size: 11px;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.sef-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.sef-badge--req { background: #fef2f2; color: #dc2626; }
+.sef-badge--opt { background: #f0fdf4; color: #15803d; }
+.sef-badge--current { background: #dcfce7; color: #166534; margin-left: 6px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+
+.sef-field-label {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.sef-field-opts {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sef-opt-chip {
+  font-size: 11px;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 1px 7px;
+  border-radius: 8px;
+}
+
+.sef-field-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── System field: damage level option block ─────────────────────────────── */
+
+.sef-damage-option {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+/* ── Infrastructure type rows ────────────────────────────────────────────── */
+
+.sef-infra-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.sef-infra-row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #fafafa;
+}
+
+.sef-option-id {
+  font-family: monospace;
+  font-size: 11px;
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.sef-option-en {
+  flex: 1;
+  font-size: 12px;
+  color: #374151;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sef-infra-labels {
+  padding: 8px 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sef-add-infra {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+
+/* ── Language grid ────────────────────────────────────────────────────────── */
+
+.sef-lang-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sef-lang-grid--compact {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+/* ── Version history ─────────────────────────────────────────────────────── */
+
+.sef-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: #fafafa;
+}
+
+.sef-history-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.sef-footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #f9fafb;
+}
+
+.sef-footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sef-pub-ok { color: #15803d; font-size: 13px; font-weight: 600; }
+.sef-pub-err { color: #dc2626; font-size: 13px; }
+
+/* ── Field editor modal overrides ────────────────────────────────────────── */
+
+.sef-modal {
+  width: 680px;
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sef-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.sef-inline-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.sef-option-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.sef-option-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sef-option-num {
+  font-size: 11px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}

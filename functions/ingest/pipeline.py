@@ -139,7 +139,7 @@ Set rejection_reason to "no_structure", "too_dark", or "unrelated" if the photo 
 Set infrastructure_visible to false if no structure is clearly visible."""
 
 
-def _ai_vision_score(photo_bytes: bytes) -> dict:
+def _ai_vision_score(photo_bytes: bytes, crisis_nature: str | None = None) -> dict:
     """
     Use Azure OpenAI GPT-4o (via Azure AI Foundry) to assess structural damage
     from a submitted photo. Returns a dict with confidence, suggested_level,
@@ -158,14 +158,21 @@ def _ai_vision_score(photo_bytes: bytes) -> dict:
         logging.warning("AI vision skipped: AOAI_ENDPOINT or AOAI_KEY not configured")
         return _null
 
-    logging.info("AI vision: calling %s/openai/deployments/%s, photo=%d bytes",
-                 endpoint, deploy, len(photo_bytes))
+    logging.info("AI vision: calling %s/openai/deployments/%s, photo=%d bytes, crisis=%s",
+                 endpoint, deploy, len(photo_bytes), crisis_nature or "unknown")
     b64 = base64.b64encode(photo_bytes).decode()
+    # Prepend crisis context so the model calibrates its assessment correctly
+    prompt_text = _DAMAGE_PROMPT
+    if crisis_nature:
+        prompt_text = (
+            f"Context: this photo was submitted during a {crisis_nature} crisis response.\n\n"
+            + prompt_text
+        )
     payload = json.dumps({
         "messages": [{
             "role": "user",
             "content": [
-                {"type": "text", "text": _DAMAGE_PROMPT},
+                {"type": "text", "text": prompt_text},
                 {"type": "image_url", "image_url": {
                     "url": f"data:image/jpeg;base64,{b64}",
                     "detail": "low",   # low detail = faster + cheaper, sufficient for damage grading
@@ -276,7 +283,8 @@ def process_report(
                 "access_status": None, "hazard_indicators": [], "intervention_priority": None}
     ai_result = _ai_null
     if photo_bytes:
-        ai_result = _ai_vision_score(photo_bytes)
+        crisis_nature_hint = submission.get_crisis_nature()
+        ai_result = _ai_vision_score(photo_bytes, crisis_nature=crisis_nature_hint)
 
     # Step 8 — translate description to English
     desc_original = submission.description or ""
@@ -290,23 +298,32 @@ def process_report(
     dup = is_duplicate(building_id or "unknown", submitted_dt) if building_id else False
 
     # Steps 10 + 11 — building state upsert and version history
+    requires_debris = submission.get_requires_debris_clearing()
     if building_id:
         _upsert_building(building_id, report_id, submission, submitted_at, sub_hash,
-                         lat, lon, bool(photo_bytes))
+                         lat, lon, bool(photo_bytes), requires_debris)
 
     # Step 12 — write full report document
+    crisis_nature = submission.get_crisis_nature()
+    requires_debris = submission.get_requires_debris_clearing()
+
     report_doc = {
         "id": report_id,
         "crisis_event_id": submission.crisis_event_id,
         "building_id": building_id,
         "submitted_at": submitted_at,
         "channel": submission.channel,
+        "schema_version": submission.schema_version,
         "damage": {
             "level": submission.damage_level.value,
-            "infrastructure_types": [t.value for t in submission.infrastructure_types],
+            "infrastructure_types": [
+                t if isinstance(t, str) else t.value
+                for t in submission.infrastructure_types
+            ],
             "infrastructure_name": submission.infrastructure_name,
-            "crisis_nature": submission.crisis_nature.value,
-            "requires_debris_clearing": submission.requires_debris_clearing,
+            # Kept for backward compat with dashboard/export code reading damage.*
+            "crisis_nature": crisis_nature,
+            "requires_debris_clearing": requires_debris,
             "description_original": desc_original or None,
             "description_original_lang": desc_lang if desc_original else None,
             "description_en": desc_en if desc_original else None,
@@ -330,7 +347,9 @@ def process_report(
             "photo_blob_path": blob_path,
             "exif_stripped": photo_bytes is not None,
         },
-        "modular_fields": submission.modular_fields or {},
+        # responses replaces modular_fields; contains all custom field answers.
+        # get_effective_responses() merges legacy top-level fields for old clients.
+        "responses": submission.get_effective_responses(),
         "meta": {
             "submitter_hash": sub_hash,
             "submitter_tier": _get_submitter_tier(sub_hash),
@@ -402,6 +421,7 @@ def _upsert_building(
     lat: float | None,
     lon: float | None,
     has_photo: bool,
+    requires_debris_clearing: bool = False,
 ) -> None:
     tier = _get_submitter_tier(sub_hash)
 
@@ -469,7 +489,7 @@ def _upsert_building(
             "current_damage_report_id": report_id,
             "report_count": (existing.get("report_count", 0) + 1) if existing else 1,
             "last_updated": submitted_at,
-            "requires_debris_clearing": submission.requires_debris_clearing,
+            "requires_debris_clearing": requires_debris_clearing,
             "submitter_tier": tier,
             "has_photo": has_photo,
             "lat": lat,

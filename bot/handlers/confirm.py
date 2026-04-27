@@ -22,7 +22,7 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
 
     await query.edit_message_text("Submitting report…")
 
-    # Download photo bytes from Telegram
+    # ── Download photo bytes from Telegram ───────────────────────────────────
     photo_bytes = None
     if file_id := ud.get("photo_file_id"):
         try:
@@ -30,38 +30,40 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
             photo_bytes = await file.download_as_bytearray()
         except Exception as exc:
             logger.warning("Photo download failed (non-fatal): %s", exc)
-            photo_bytes = None  # proceed without photo
 
-    crisis_event_id = os.environ.get("CRISIS_EVENT_ID", "ke-flood-dev")
-
-    # Use .get() with fallbacks so a missing key doesn't silently crash
+    # ── Validate mandatory system fields ─────────────────────────────────────
     damage_level = ud.get("damage_level")
-    crisis_nature = ud.get("crisis_nature")
+    infra_selected = list(ud.get("infra_selected", set()))
 
-    if not damage_level or not crisis_nature:
-        logger.error("user_data missing required fields. ud keys: %s", list(ud.keys()))
-        await query.edit_message_text(
-            "Session expired — please start again with /start."
-        )
+    if not damage_level:
+        logger.error("damage_level missing from user_data. ud keys: %s", list(ud.keys()))
+        await query.edit_message_text("Session expired — please start again with /start.")
         return
 
-    modular = {}
-    if elec := ud.get("electricity_status"):
-        modular["electricity_status"] = elec
-    if health := ud.get("health_services"):
-        modular["health_services"] = health
-    if needs := ud.get("needs_selected"):
-        modular["pressing_needs"] = list(needs)
+    if not infra_selected:
+        logger.error("infra_selected empty. ud keys: %s", list(ud.keys()))
+        await query.edit_message_text("Session expired — please start again with /start.")
+        return
+
+    # ── Build payload ────────────────────────────────────────────────────────
+    crisis_event_id = os.environ.get("CRISIS_EVENT_ID", "ke-flood-dev")
+    schema = ud.get("schema", {})
+    schema_version = schema.get("version")
+
+    # responses holds all custom field answers collected during the form flow
+    responses = ud.get("responses", {})
 
     payload = {
-        "damage_level":             damage_level,
-        "infrastructure_types":     json.dumps(list(ud.get("infra_selected", []))),
-        "crisis_nature":            crisis_nature,
-        "requires_debris_clearing": str(ud.get("requires_debris_clearing", False)).lower(),
-        "crisis_event_id":          crisis_event_id,
-        "channel":                  "telegram",
-        "modular_fields":           json.dumps(modular),
+        "damage_level":         damage_level,
+        "infrastructure_types": json.dumps(infra_selected),
+        "crisis_event_id":      crisis_event_id,
+        "channel":              "telegram",
+        # New dynamic schema fields
+        "responses":            json.dumps(responses),
+        **({"schema_version": str(schema_version)} if schema_version else {}),
     }
+
+    # GPS location
     if lat := ud.get("gps_lat"):
         payload["gps_lat"] = str(lat)
         payload["gps_lon"] = str(ud.get("gps_lon", ""))
@@ -70,8 +72,12 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
     if desc := ud.get("location_description"):
         payload["location_description"] = desc
 
-    logger.info("Submitting to %s — payload keys: %s", _api_base(), list(payload.keys()))
+    logger.info(
+        "Submitting to %s — damage=%s infra=%s schema_v=%s responses_keys=%s",
+        _api_base(), damage_level, infra_selected, schema_version, list(responses.keys()),
+    )
 
+    # ── POST to pipeline API ─────────────────────────────────────────────────
     try:
         result = _post_report(payload, photo_bytes, str(query.from_user.id))
     except urllib.error.HTTPError as exc:
@@ -88,6 +94,7 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
+    # ── Send success messages ─────────────────────────────────────────────────
     report_id = result.get("report_id", "unknown")
     map_url = result.get("map_url", "")
     if map_url:

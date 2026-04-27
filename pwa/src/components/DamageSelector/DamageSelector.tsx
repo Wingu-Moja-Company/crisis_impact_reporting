@@ -6,10 +6,30 @@ export type DamageLevel = (typeof LEVELS)[number];
 interface Props {
   value: DamageLevel | null;
   onChange: (level: DamageLevel) => void;
+  /**
+   * Optional schema options — keyed by damage level value, value is a label map (lang → text).
+   * When provided, labels come from the schema instead of i18n keys.
+   */
+  schemaOptions?: Record<string, Record<string, string>>;
+  /** Current UI language (for schema label lookup). */
+  lang?: string;
 }
 
-export function DamageSelector({ value, onChange }: Props) {
+export function DamageSelector({ value, onChange, schemaOptions, lang = "en" }: Props) {
   const { t } = useTranslation();
+
+  function levelLabel(level: DamageLevel): string {
+    if (schemaOptions?.[level]) {
+      return schemaOptions[level][lang] || schemaOptions[level]["en"] || t(`form.damage_${level}_label`);
+    }
+    return t(`form.damage_${level}_label`);
+  }
+
+  function levelSub(level: DamageLevel): string {
+    // Sub-text is part of the label in schema — only show separate sub when using i18n
+    if (schemaOptions?.[level]) return "";
+    return t(`form.damage_${level}_sub`);
+  }
 
   return (
     <fieldset className="damage-selector">
@@ -29,8 +49,8 @@ export function DamageSelector({ value, onChange }: Props) {
             />
             <span className="damage-dot" />
             <span className="damage-text">
-              <strong>{t(`form.damage_${level}_label`)}</strong>
-              <span>{t(`form.damage_${level}_sub`)}</span>
+              <strong>{levelLabel(level)}</strong>
+              {levelSub(level) && <span>{levelSub(level)}</span>}
             </span>
           </label>
         ))}

@@ -45,6 +45,19 @@ def build_feature(doc: dict) -> dict | None:
     if not coords:
         return None
     blob_path = doc.get("media", {}).get("photo_blob_path")
+    damage = doc.get("damage", {})
+
+    # Custom field responses — handle both new (responses) and old (modular_fields) formats
+    responses: dict = doc.get("responses") or doc.get("modular_fields") or {}
+
+    # Backward-compat reads for crisis_nature and requires_debris_clearing:
+    # In old reports they live in damage.*; in new reports in responses (but also
+    # mirrored into damage.* for backward compat by the pipeline).
+    crisis_nature = damage.get("crisis_nature") or responses.get("crisis_nature")
+    requires_debris = damage.get("requires_debris_clearing")
+    if requires_debris is None:
+        requires_debris = responses.get("requires_debris_clearing")
+
     return {
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": coords},
@@ -55,20 +68,21 @@ def build_feature(doc: dict) -> dict | None:
             "building_id":              doc.get("building_id"),
             "submitted_at":             doc["submitted_at"],
             "channel":                  doc["channel"],
+            "schema_version":           doc.get("schema_version"),
             # Damage assessment (RAPIDA / OCHA HDX standard fields)
-            "damage_level":             doc["damage"]["level"],
-            "infrastructure_types":     doc["damage"]["infrastructure_types"],
-            "infrastructure_name":      doc["damage"].get("infrastructure_name"),
-            "crisis_nature":            doc["damage"]["crisis_nature"],
-            "requires_debris_clearing": doc["damage"]["requires_debris_clearing"],
-            "description_en":           doc["damage"].get("description_en"),
-            "ai_vision_confidence":           doc["damage"].get("ai_vision_confidence"),
-            "ai_vision_suggested_level":      doc["damage"].get("ai_vision_suggested_level"),
-            "ai_vision_summary":              doc["damage"].get("ai_vision_summary"),
-            "ai_vision_debris_confirmed":     doc["damage"].get("ai_vision_debris_confirmed"),
-            "ai_vision_access_status":        doc["damage"].get("ai_vision_access_status"),
-            "ai_vision_hazard_indicators":    doc["damage"].get("ai_vision_hazard_indicators") or [],
-            "ai_vision_intervention_priority": doc["damage"].get("ai_vision_intervention_priority"),
+            "damage_level":             damage.get("level"),
+            "infrastructure_types":     damage.get("infrastructure_types", []),
+            "infrastructure_name":      damage.get("infrastructure_name"),
+            "crisis_nature":            crisis_nature,
+            "requires_debris_clearing": requires_debris,
+            "description_en":           damage.get("description_en"),
+            "ai_vision_confidence":           damage.get("ai_vision_confidence"),
+            "ai_vision_suggested_level":      damage.get("ai_vision_suggested_level"),
+            "ai_vision_summary":              damage.get("ai_vision_summary"),
+            "ai_vision_debris_confirmed":     damage.get("ai_vision_debris_confirmed"),
+            "ai_vision_access_status":        damage.get("ai_vision_access_status"),
+            "ai_vision_hazard_indicators":    damage.get("ai_vision_hazard_indicators") or [],
+            "ai_vision_intervention_priority": damage.get("ai_vision_intervention_priority"),
             # Location detail
             "what3words":               doc.get("location", {}).get("what3words"),
             "location_description":     doc.get("location", {}).get("location_description"),
@@ -77,6 +91,8 @@ def build_feature(doc: dict) -> dict | None:
             "submitter_tier":           doc.get("meta", {}).get("submitter_tier", "public"),
             # Photo evidence — short-lived SAS URL (valid 2 h)
             "photo_url":                _photo_url(blob_path),
+            # Flatten all custom field responses (dynamic — keys vary per schema)
+            **responses,
         },
     }
 

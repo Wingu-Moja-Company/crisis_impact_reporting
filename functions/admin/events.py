@@ -5,12 +5,15 @@ All endpoints require X-Admin-Key header matching ADMIN_API_KEY env var.
 
 import hmac
 import json
+import logging
 import os
 import re
 from datetime import datetime, timezone
 
 import azure.functions as func
 from azure.cosmos import CosmosClient, exceptions as cosmos_exc
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +372,15 @@ def create_event(req: func.HttpRequest) -> func.HttpResponse:
             json.dumps({"error": "db_error", "detail": str(exc)}),
             status_code=500, mimetype="application/json",
         )
+
+    # Seed v1 schema for the new event (idempotent — skips if already exists)
+    try:
+        from schema.defaults import get_default_schema
+        from schema.service import seed_schema
+        seed_schema(event_id, get_default_schema(crisis_nature))
+    except Exception as exc:
+        # Non-fatal — event was created; schema can be seeded manually
+        logger.warning("Failed to auto-seed schema for %s: %s", event_id, exc)
 
     return func.HttpResponse(
         json.dumps(doc), status_code=201, mimetype="application/json",

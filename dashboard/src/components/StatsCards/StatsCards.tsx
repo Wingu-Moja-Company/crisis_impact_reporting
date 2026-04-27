@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useStats } from "../../hooks/useStats";
+import type { FormSchema } from "../../hooks/useSchema";
+import { getSchemaLabel } from "../../hooks/useSchema";
 
 const POLL_INTERVAL_S = 30;
 
@@ -9,6 +11,7 @@ interface Props {
   liveCount: number;
   wsConnected: boolean;
   lastFetched: number | null;
+  schema?: FormSchema | null;
 }
 
 function PollCountdown({ lastFetched }: { lastFetched: number | null }) {
@@ -35,9 +38,20 @@ const LEVEL_COLORS: Record<string, string> = {
   complete: "#E24B4A",
 };
 
-export function StatsCards({ crisisEventId, liveCount, wsConnected, lastFetched }: Props) {
-  const { t } = useTranslation();
+export function StatsCards({ crisisEventId, liveCount, wsConnected, lastFetched, schema }: Props) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.slice(0, 2) || "en";
   const stats = useStats(crisisEventId);
+
+  /** Get damage level label from schema, falling back to i18n key */
+  function damageLevelLabel(lvl: string): string {
+    const schemaOpts = schema?.system_fields?.damage_level?.options;
+    if (schemaOpts && !Array.isArray(schemaOpts)) {
+      const optLabels = (schemaOpts as Record<string, Record<string, string>>)[lvl];
+      if (optLabels) return getSchemaLabel(optLabels, lang) || t(`stats.${lvl}`);
+    }
+    return t(`stats.${lvl}`);
+  }
 
   return (
     <div className="stats-cards">
@@ -49,7 +63,7 @@ export function StatsCards({ crisisEventId, liveCount, wsConnected, lastFetched 
       {(["minimal", "partial", "complete"] as const).map((lvl) => (
         <div key={lvl} className="stat-card" style={{ borderTop: `4px solid ${LEVEL_COLORS[lvl]}` }}>
           <span className="stat-value">{stats?.by_damage_level[lvl] ?? 0}</span>
-          <span className="stat-label">{t(`stats.${lvl}`)}</span>
+          <span className="stat-label">{damageLevelLabel(lvl)}</span>
         </div>
       ))}
 
