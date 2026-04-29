@@ -63,6 +63,7 @@ jobs:
         env:
           VITE_API_BASE_URL:    ${{ secrets.API_BASE_URL }}
           VITE_CRISIS_EVENT_ID: ${{ secrets.CRISIS_EVENT_ID }}
+          VITE_INGEST_API_KEY:  ${{ secrets.INGEST_API_KEY }}
 
       - name: Deploy PWA
         uses: Azure/static-web-apps-deploy@v1
