@@ -128,3 +128,4 @@ jobs:
           API_BASE_URL:    ${{ secrets.API_BASE_URL }}
           EXPORT_API_KEY:  ${{ secrets.EXPORT_API_KEY }}
           INGEST_API_KEY:  ${{ secrets.INGEST_API_KEY }}
+          ADMIN_API_KEY:   ${{ secrets.ADMIN_API_KEY }}

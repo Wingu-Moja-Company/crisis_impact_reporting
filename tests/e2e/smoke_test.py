@@ -29,6 +29,7 @@ def check(name: str, condition: bool, detail: str = "") -> None:
 
 _EXPORT_API_KEY = os.environ.get("EXPORT_API_KEY", "")
 _INGEST_API_KEY = os.environ.get("INGEST_API_KEY", _EXPORT_API_KEY)
+_ADMIN_API_KEY  = os.environ.get("ADMIN_API_KEY", _EXPORT_API_KEY)
 
 
 def _api_headers() -> dict:
@@ -37,6 +38,10 @@ def _api_headers() -> dict:
 
 def _ingest_headers() -> dict:
     return {"X-API-Key": _INGEST_API_KEY} if _INGEST_API_KEY else {}
+
+
+def _admin_headers() -> dict:
+    return {"X-Admin-Key": _ADMIN_API_KEY} if _ADMIN_API_KEY else {}
 
 
 def get(url: str, timeout: int = 10) -> tuple[int, dict | str]:
@@ -52,6 +57,17 @@ def get(url: str, timeout: int = 10) -> tuple[int, dict | str]:
         return e.code, {}
     except Exception as e:
         return 0, str(e)
+
+
+def delete(url: str, timeout: int = 10) -> int:
+    req = urllib.request.Request(url, headers=_admin_headers(), method="DELETE")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except Exception:
+        return 0
 
 
 def post(url: str, fields: dict, timeout: int = 30) -> tuple[int, dict]:
@@ -114,6 +130,9 @@ def run(api_base: str, crisis_event_id: str) -> None:
     check("GET /feeds/cap/{id}.xml returns 200", status == 200, f"got {status}")
     check("CAP feed contains <alert>", isinstance(body, str) and "<alert" in body)
 
+    # Track report IDs created by this test run so we can delete them afterwards
+    _test_report_ids: list[str] = []
+
     # 6. Submit a test report
     print("\nReport submission")
     status, body = post(f"{api_base}/v1/reports", {
@@ -129,6 +148,8 @@ def run(api_base: str, crisis_event_id: str) -> None:
     })
     check("POST /v1/reports returns 201", status == 201, f"got {status}")
     check("Response has report_id", isinstance(body, dict) and "report_id" in body)
+    if isinstance(body, dict) and "report_id" in body:
+        _test_report_ids.append(body["report_id"])
 
     # 7. Missing crisis_event_id → 400
     print("\nValidation")
@@ -183,6 +204,8 @@ def run(api_base: str, crisis_event_id: str) -> None:
     })
     check("POST /v1/reports with schema_version+responses returns 201", status == 201, f"got {status}")
     check("New-format response has report_id", isinstance(body, dict) and "report_id" in body)
+    if isinstance(body, dict) and "report_id" in body:
+        _test_report_ids.append(body["report_id"])
 
     # 11. GeoJSON has schema_version and flattened responses
     print("\nGeoJSON schema integration")
@@ -204,6 +227,17 @@ def run(api_base: str, crisis_event_id: str) -> None:
     # 12. Schema for unknown event → 404
     status, _ = get(f"{api_base}/v1/crisis-events/nonexistent-smoke-test-event/schema")
     check("GET schema for unknown event returns 404", status == 404, f"got {status}")
+
+    # Cleanup — delete all test reports created during this run so they don't
+    # appear on the live dashboard as real data.
+    if _test_report_ids:
+        print("\nCleanup")
+        for report_id in _test_report_ids:
+            s = delete(
+                f"{api_base}/v1/admin/reports/{report_id}"
+                f"?crisis_event_id={crisis_event_id}"
+            )
+            check(f"DELETE test report {report_id}", s in (200, 204), f"got {s}")
 
     # Summary
     print(f"\n{'─' * 50}")
