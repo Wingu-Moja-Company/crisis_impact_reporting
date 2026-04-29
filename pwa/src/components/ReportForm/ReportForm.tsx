@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useSchema } from "../../hooks/useSchema";
@@ -42,19 +42,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
   const [result, setResult] = useState<{ reportId: string; offline: boolean } | null>(null);
   const [retrying, setRetrying] = useState(false);
 
-  // ── Schema version banner ─────────────────────────────────────────────────
-  const [schemaUpdated, setSchemaUpdated] = useState(false);
-  const firstVersion = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (schemaVersion === null) return;
-    if (firstVersion.current === null) {
-      firstVersion.current = schemaVersion;
-    } else if (schemaVersion !== firstVersion.current) {
-      setSchemaUpdated(true);
-    }
-  }, [schemaVersion]);
-
   const fileRef   = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -74,8 +61,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setGeocodeFailed(false);
     setSubmitError(null);
     setResult(null);
-    setSchemaUpdated(false);
-    firstVersion.current = null;
     if (fileRef.current) fileRef.current.value = "";
     if (cameraRef.current) cameraRef.current.value = "";
   }
@@ -237,16 +222,6 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
   return (
     <form className="report-form" onSubmit={handleSubmit}>
-
-      {/* Schema update banner */}
-      {schemaUpdated && (
-        <div style={{
-          background: "#fef9c3", border: "1px solid #d97706", borderRadius: "8px",
-          padding: ".75rem 1rem", marginBottom: "1rem", fontSize: ".85rem",
-        }}>
-          🔄 {t("form.schema_updated") || "The form has been updated. Please review your answers."}
-        </div>
-      )}
 
       {isFallback && (
         <div style={{

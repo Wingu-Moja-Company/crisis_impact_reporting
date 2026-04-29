@@ -14,12 +14,32 @@ import { getSchemaLabel } from "../../hooks/useSchema";
 import { FieldEditorModal } from "./FieldEditorModal";
 import "./SchemaEditor.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API_BASE       = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
 const LANGS = ["en", "fr", "ar", "ru", "es", "zh"] as const;
 const LANG_NAMES: Record<string, string> = {
   en: "English", fr: "Français", ar: "العربية",
   ru: "Русский", es: "Español", zh: "中文",
 };
+
+async function fetchTranslations(
+  text: string,
+  context: string,
+): Promise<Record<string, string>> {
+  const res = await fetch(`${API_BASE}/v1/admin/translate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(EXPORT_API_KEY ? { "X-API-Key": EXPORT_API_KEY } : {}),
+    },
+    body: JSON.stringify({ text, context }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -36,27 +56,46 @@ interface VersionMeta {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-/** Editable label grid for a field (6 languages) */
+/** Editable label grid for a field (6 languages), with optional translate button */
 function LabelGrid({
   labels,
   onChange,
+  onTranslate,
+  translating,
 }: {
   labels: Record<string, string>;
   onChange: (lang: string, val: string) => void;
+  onTranslate?: () => void;
+  translating?: boolean;
 }) {
   return (
-    <div className="sef-lang-grid">
-      {LANGS.map((lang) => (
-        <label key={lang} className="ap-label">
-          {LANG_NAMES[lang]}
-          <input
-            className="ap-input"
-            value={labels[lang] ?? ""}
-            onChange={(e) => onChange(lang, e.target.value)}
-            placeholder={lang === "en" ? "Required" : "Optional"}
-          />
-        </label>
-      ))}
+    <div className="sef-label-grid-wrap">
+      {onTranslate && (
+        <div className="sef-label-grid-toolbar">
+          <button
+            type="button"
+            className="ap-btn ap-btn--ghost ap-btn--sm sef-translate-btn"
+            onClick={onTranslate}
+            disabled={translating}
+            title="Auto-translate English to all languages"
+          >
+            {translating ? "Translating…" : "✨ Translate"}
+          </button>
+        </div>
+      )}
+      <div className="sef-lang-grid">
+        {LANGS.map((lang) => (
+          <label key={lang} className="ap-label">
+            {LANG_NAMES[lang]}
+            <input
+              className="ap-input"
+              value={labels[lang] ?? ""}
+              onChange={(e) => onChange(lang, e.target.value)}
+              placeholder={lang === "en" ? "Required" : "Optional"}
+            />
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -66,10 +105,14 @@ function InfraOptionRow({
   opt,
   onLabelChange,
   onRemove,
+  onTranslate,
+  translating,
 }: {
   opt: SchemaOption;
   onLabelChange: (lang: string, val: string) => void;
   onRemove: () => void;
+  onTranslate?: () => void;
+  translating?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -95,7 +138,12 @@ function InfraOptionRow({
       </div>
       {expanded && (
         <div className="sef-infra-labels">
-          <LabelGrid labels={opt.labels} onChange={onLabelChange} />
+          <LabelGrid
+            labels={opt.labels}
+            onChange={onLabelChange}
+            onTranslate={onTranslate}
+            translating={translating}
+          />
         </div>
       )}
     </div>
@@ -118,6 +166,7 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [publishState, setPublishState] = useState<"idle" | "publishing" | "done" | "error">("idle");
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [translating, setTranslating] = useState<string | null>(null);
 
   // Local editable copy of the schema (cloned from fetched version)
   const [draft, setDraft] = useState<FormSchema | null>(null);
@@ -131,6 +180,25 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
   const authHeaders: Record<string, string> = adminKey
     ? { "X-Admin-Key": adminKey, "X-API-Key": adminKey }
     : {};
+
+  /** Generic translate helper — key identifies which section is loading */
+  async function doTranslate(
+    key: string,
+    enText: string,
+    context: string,
+    applyFn: (t: Record<string, string>) => void,
+  ) {
+    if (!enText.trim()) return;
+    setTranslating(key);
+    try {
+      const t = await fetchTranslations(enText.trim(), context);
+      applyFn(t);
+    } catch (e) {
+      setError(`Translation failed: ${(e as Error).message}`);
+    } finally {
+      setTranslating(null);
+    }
+  }
 
   // ── Load schema ────────────────────────────────────────────────────────────
   const loadSchema = useCallback(async () => {
@@ -477,6 +545,13 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
             <LabelGrid
               labels={draft.system_fields.damage_level.labels as Record<string, string>}
               onChange={setDamageLevelQuestionLabel}
+              onTranslate={() => doTranslate(
+                "dmg_q",
+                (draft.system_fields.damage_level.labels as Record<string, string>).en ?? "",
+                "question label",
+                (t) => Object.entries(t).forEach(([lang, val]) => setDamageLevelQuestionLabel(lang, val)),
+              )}
+              translating={translating === "dmg_q"}
             />
             {(["minimal", "partial", "complete"] as const).map((lvl) => (
               <div key={lvl} className="sef-damage-option">
@@ -484,6 +559,13 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
                 <LabelGrid
                   labels={damageOpts[lvl] ?? emptyLabels()}
                   onChange={(lang, val) => setDamageOptionLabel(lvl, lang, val)}
+                  onTranslate={() => doTranslate(
+                    `dmg_${lvl}`,
+                    (damageOpts[lvl] ?? {}).en ?? lvl,
+                    "damage level option",
+                    (t) => Object.entries(t).forEach(([lang, val]) => setDamageOptionLabel(lvl, lang, val)),
+                  )}
+                  translating={translating === `dmg_${lvl}`}
                 />
               </div>
             ))}
@@ -497,6 +579,13 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
             <LabelGrid
               labels={draft.system_fields.infrastructure_type.labels as Record<string, string>}
               onChange={setInfraTypeQuestionLabel}
+              onTranslate={() => doTranslate(
+                "infra_q",
+                (draft.system_fields.infrastructure_type.labels as Record<string, string>).en ?? "",
+                "question label",
+                (t) => Object.entries(t).forEach(([lang, val]) => setInfraTypeQuestionLabel(lang, val)),
+              )}
+              translating={translating === "infra_q"}
             />
             <div className="sef-section-sub" style={{ marginTop: 12 }}>Options</div>
             {infraOptions.map((opt) => (
@@ -505,6 +594,13 @@ export function SchemaEditor({ crisisEventId, adminKey, onClose }: Props) {
                 opt={opt}
                 onLabelChange={(lang, val) => setInfraOptionLabel(opt.value, lang, val)}
                 onRemove={() => removeInfraOption(opt.value)}
+                onTranslate={() => doTranslate(
+                  `infra_opt_${opt.value}`,
+                  opt.labels.en ?? "",
+                  "infrastructure type option",
+                  (t) => Object.entries(t).forEach(([lang, val]) => setInfraOptionLabel(opt.value, lang, val)),
+                )}
+                translating={translating === `infra_opt_${opt.value}`}
               />
             ))}
             <div className="sef-add-infra">

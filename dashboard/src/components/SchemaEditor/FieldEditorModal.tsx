@@ -13,12 +13,35 @@ const LANG_NAMES: Record<string, string> = {
   ru: "Русский", es: "Español", zh: "中文",
 };
 
+const API_BASE       = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const EXPORT_API_KEY = import.meta.env.VITE_EXPORT_API_KEY ?? "";
+
 function emptyLabels(): Record<string, string> {
   return Object.fromEntries(LANGS.map((l) => [l, ""]));
 }
 
 function emptyOption(): SchemaOption {
   return { value: "", labels: emptyLabels() };
+}
+
+/** Call the translate endpoint and return {fr, ar, ru, es, zh}. */
+async function fetchTranslations(
+  text: string,
+  context: string
+): Promise<Record<string, string>> {
+  const res = await fetch(`${API_BASE}/v1/admin/translate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(EXPORT_API_KEY ? { "X-API-Key": EXPORT_API_KEY } : {}),
+    },
+    body: JSON.stringify({ text, context }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
 interface Props {
@@ -43,6 +66,39 @@ export function FieldEditorModal({ field, nextOrder, onSave, onClose }: Props) {
     field?.options ? [...field.options] : [emptyOption()]
   );
   const [error, setError] = useState<string | null>(null);
+
+  // Translate loading states: "label" | `opt-{idx}` | null
+  const [translating, setTranslating] = useState<string | null>(null);
+
+  async function translateLabel() {
+    const en = labels.en?.trim();
+    if (!en) { setError("Enter the English label first"); return; }
+    setTranslating("label");
+    try {
+      const t = await fetchTranslations(en, "question label");
+      setLabels((prev) => ({ ...prev, ...t }));
+    } catch (e) {
+      setError(`Translation failed: ${(e as Error).message}`);
+    } finally {
+      setTranslating(null);
+    }
+  }
+
+  async function translateOption(idx: number) {
+    const en = options[idx]?.labels?.en?.trim();
+    if (!en) { setError(`Enter the English label for option ${idx + 1} first`); return; }
+    setTranslating(`opt-${idx}`);
+    try {
+      const t = await fetchTranslations(en, "answer option");
+      setOptions((prev) =>
+        prev.map((o, i) => i === idx ? { ...o, labels: { ...o.labels, ...t } } : o)
+      );
+    } catch (e) {
+      setError(`Translation failed: ${(e as Error).message}`);
+    } finally {
+      setTranslating(null);
+    }
+  }
 
   const hasOptions = type === "select" || type === "multiselect";
 
@@ -146,7 +202,18 @@ export function FieldEditorModal({ field, nextOrder, onSave, onClose }: Props) {
           </label>
 
           {/* ── Question labels ─────────────────────────────────────────── */}
-          <div className="sef-section-title">Question text (shown to respondent)</div>
+          <div className="sef-section-title-row">
+            <span className="sef-section-title">Question text (shown to respondent)</span>
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm sef-translate-btn"
+              onClick={translateLabel}
+              disabled={translating !== null}
+              title="Auto-translate English to all languages"
+            >
+              {translating === "label" ? "Translating…" : "✨ Translate"}
+            </button>
+          </div>
           <div className="sef-lang-grid">
             {LANGS.map((lang) => (
               <label key={lang} className="ap-label">
@@ -177,6 +244,15 @@ export function FieldEditorModal({ field, nextOrder, onSave, onClose }: Props) {
                         placeholder="e.g. knee_deep"
                       />
                     </label>
+                    <button
+                      type="button"
+                      className="ap-btn ap-btn--ghost ap-btn--sm sef-translate-btn"
+                      onClick={() => translateOption(idx)}
+                      disabled={translating !== null}
+                      title="Auto-translate English label to all languages"
+                    >
+                      {translating === `opt-${idx}` ? "Translating…" : "✨ Translate"}
+                    </button>
                     <button
                       type="button"
                       className="ap-icon-btn"
