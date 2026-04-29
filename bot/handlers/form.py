@@ -16,6 +16,7 @@ After all custom fields are answered, calls confirm.submit().
 import logging
 
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
@@ -57,6 +58,7 @@ async def _advance_custom_fields(
             await query.edit_message_text(
                 question,
                 reply_markup=dynamic.build_select_field(field, lang, idx),
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -64,6 +66,7 @@ async def _advance_custom_fields(
             await query.edit_message_text(
                 question,
                 reply_markup=dynamic.build_boolean_field(field, lang, idx),
+                parse_mode=ParseMode.HTML,
             )
             return
 
@@ -72,15 +75,19 @@ async def _advance_custom_fields(
             await query.edit_message_text(
                 question,
                 reply_markup=dynamic.build_multiselect_field(field, lang, idx, selected),
+                parse_mode=ParseMode.HTML,
             )
             return
 
         elif field_type in ("text", "number"):
             # Text / number fields: send a plain message and wait for MessageHandler
-            # Store pending field so the text handler can pick it up
             context.user_data["_pending_text_field_idx"] = idx
             required_hint = "" if field.get("required", True) else f"\n{t('field_skip', lang)}"
-            await query.edit_message_text(question + required_hint)
+            pii_note = f"\n\n<i>{t('pii_warning', lang)}</i>"
+            await query.edit_message_text(
+                question + required_hint + pii_note,
+                parse_mode=ParseMode.HTML,
+            )
             return
 
         else:
@@ -115,6 +122,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text(
             infra_question,
             reply_markup=dynamic.build_infra_type(schema, lang, set()),
+            parse_mode=ParseMode.HTML,
         )
 
     # ── Infrastructure type (system field, multiselect) ──────────────────────
@@ -136,7 +144,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 selected.discard(value)
             else:
                 selected.add(value)
-            infra_question = dynamic.system_field_question("infrastructure_type", schema, lang)
             await query.edit_message_reply_markup(
                 reply_markup=dynamic.build_infra_type(schema, lang, selected),
             )

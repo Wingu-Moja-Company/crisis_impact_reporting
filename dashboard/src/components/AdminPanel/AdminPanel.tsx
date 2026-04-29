@@ -35,12 +35,6 @@ const SCHEMA_TYPES = [
   { value: "generic",   labelKey: "Generic (no extra fields)" },
 ] as const;
 
-const STATUS_COLOURS: Record<string, string> = {
-  active:   "#16a34a",
-  archived: "#6b7280",
-  paused:   "#d97706",
-};
-
 const NATURE_EMOJI: Record<string, string> = {
   flood: "🌊", earthquake: "🏚", hurricane: "🌀", wildfire: "🔥",
   tsunami: "🌊", conflict: "⚔️", civil_unrest: "🚨",
@@ -59,17 +53,48 @@ function exportUrl(eventId: string, format: "geojson" | "csv" | "shapefile"): st
   return key ? `${base}&_key=${encodeURIComponent(key)}` : base;
 }
 
-function StatsBadge({ stats }: { stats: EventStats | null }) {
-  const { t } = useTranslation();
-  if (!stats) return <span className="ap-badge ap-badge--grey">{t("admin.loading_badge")}</span>;
-  const total = stats.total_reports;
-  if (total === 0) return <span className="ap-badge ap-badge--grey">{t("admin.no_reports_badge")}</span>;
+const PWA_BASE      = (import.meta.env.VITE_PWA_URL ?? "").replace(/\/$/, "");
+const BOT_USERNAME  = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
+
+function pwaLink(eventId: string): string {
+  return PWA_BASE ? `${PWA_BASE}/?crisis_event_id=${encodeURIComponent(eventId)}` : "";
+}
+
+function botLink(eventId: string): string {
+  return BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=${encodeURIComponent(eventId)}` : "";
+}
+
+/** Compact inline copy pill — sits in the meta line next to slug/date. */
+function MetaCopyBtn({ url, label, icon }: { url: string; label: string; icon: React.ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  if (!url) return null;
+  function handleCopy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
   return (
-    <span className="ap-badge ap-badge--blue" title={JSON.stringify(stats.by_damage_level, null, 2)}>
-      {t(total === 1 ? "admin.reports_badge_one" : "admin.reports_badge_other", { count: total })}
-    </span>
+    <button
+      type="button"
+      className={`meta-copy-btn${copied ? " meta-copy-btn--copied" : ""}`}
+      onClick={handleCopy}
+      title={url}
+    >
+      {copied ? (
+        <>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Copied
+        </>
+      ) : (
+        <>{icon}{label}</>
+      )}
+    </button>
   );
 }
+
 
 interface CreateModalProps {
   adminKey: string;
@@ -254,6 +279,391 @@ function CreateModal({ adminKey, onCreated, onClose }: CreateModalProps) {
   );
 }
 
+// ── Reports Manager Modal ──────────────────────────────────────────────────
+
+interface ReportRow {
+  report_id: string;
+  submitted_at: string;
+  channel: string;
+  damage_level: string;
+  infrastructure_types: string[];
+  lat: number | null;
+  lon: number | null;
+  responses: Record<string, unknown>;
+}
+
+const DAMAGE_LEVELS = ["minimal", "partial", "complete"] as const;
+const INFRA_OPTIONS = [
+  "residential", "commercial", "government", "utility",
+  "transport", "community", "public_space", "other",
+];
+const DAMAGE_COLOUR: Record<string, string> = {
+  minimal: "#16a34a", partial: "#d97706", complete: "#dc2626",
+};
+
+interface ReportsModalProps {
+  crisisEventId: string;
+  adminKey: string;
+  onClose: () => void;
+}
+
+function ReportsModal({ crisisEventId, adminKey, onClose }: ReportsModalProps) {
+  const exportKey = import.meta.env.VITE_EXPORT_API_KEY ?? "";
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Edit form state
+  const [editDamage, setEditDamage] = useState<string>("");
+  const [editInfra, setEditInfra] = useState<string[]>([]);
+  const [editResponses, setEditResponses] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const authHeaders = {
+    ...(adminKey ? { "X-Admin-Key": adminKey } : {}),
+    ...(exportKey ? { "X-API-Key": exportKey } : {}),
+  };
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(
+          `${API_BASE}/v1/reports?crisis_event_id=${encodeURIComponent(crisisEventId)}&format=geojson&limit=500`,
+          { headers: exportKey ? { "X-API-Key": exportKey } : {} },
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const features = (data.features ?? []) as { properties: Record<string, unknown>; geometry: { coordinates: number[] } | null }[];
+        const KNOWN_META = new Set([
+          "report_id","crisis_event_id","building_id","submitted_at","channel",
+          "schema_version","damage_level","infrastructure_types","infrastructure_name",
+          "description_en","description","ai_vision_confidence","ai_vision_suggested_level",
+          "ai_vision_summary","ai_vision_debris_confirmed","ai_vision_access_status",
+          "ai_vision_hazard_indicators","ai_vision_intervention_priority","what3words",
+          "location_description","building_footprint_matched","submitter_tier","photo_url",
+        ]);
+        const rows: ReportRow[] = features.map((f) => {
+          const p = f.properties;
+          const responses: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(p)) {
+            if (!KNOWN_META.has(k)) responses[k] = v;
+          }
+          return {
+            report_id: String(p.report_id ?? ""),
+            submitted_at: String(p.submitted_at ?? ""),
+            channel: String(p.channel ?? ""),
+            damage_level: String(p.damage_level ?? ""),
+            infrastructure_types: (p.infrastructure_types as string[]) ?? [],
+            lat: f.geometry?.coordinates?.[1] ?? null,
+            lon: f.geometry?.coordinates?.[0] ?? null,
+            responses,
+          };
+        });
+        rows.sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
+        setReports(rows);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [crisisEventId, exportKey]);
+
+  function startEdit(r: ReportRow) {
+    setEditingId(r.report_id);
+    setEditDamage(r.damage_level);
+    setEditInfra([...r.infrastructure_types]);
+    // Convert responses values to strings for simple text inputs
+    setEditResponses(
+      Object.fromEntries(
+        Object.entries(r.responses).map(([k, v]) => [
+          k,
+          Array.isArray(v) ? (v as string[]).join(", ") : String(v ?? ""),
+        ]),
+      ),
+    );
+    setSaveError(null);
+    setConfirmId(null);
+  }
+
+  function toggleInfra(val: string) {
+    setEditInfra((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
+    );
+  }
+
+  async function handleSave(reportId: string) {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      // Convert response strings back — split comma-separated lists for known array fields
+      const ARRAY_FIELDS = new Set(["infrastructure_types", "pressing_needs", "ai_vision_hazard_indicators"]);
+      const responses: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(editResponses)) {
+        if (ARRAY_FIELDS.has(k)) {
+          responses[k] = v.split(",").map((s) => s.trim()).filter(Boolean);
+        } else if (v === "true") {
+          responses[k] = true;
+        } else if (v === "false") {
+          responses[k] = false;
+        } else {
+          responses[k] = v;
+        }
+      }
+
+      const res = await fetch(
+        `${API_BASE}/v1/admin/reports/${encodeURIComponent(reportId)}?crisis_event_id=${encodeURIComponent(crisisEventId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            damage_level: editDamage,
+            infrastructure_types: editInfra,
+            responses,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      // Update local state
+      setReports((prev) =>
+        prev.map((r) =>
+          r.report_id === reportId
+            ? { ...r, damage_level: editDamage, infrastructure_types: editInfra, responses }
+            : r,
+        ),
+      );
+      setEditingId(null);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(reportId: string) {
+    setDeleting(reportId);
+    setConfirmId(null);
+    try {
+      const res = await fetch(
+        `${API_BASE}/v1/admin/reports/${encodeURIComponent(reportId)}?crisis_event_id=${encodeURIComponent(crisisEventId)}`,
+        { method: "DELETE", headers: authHeaders },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setReports((prev) => prev.filter((r) => r.report_id !== reportId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  function fmtTime(iso: string) {
+    try {
+      return new Date(iso).toLocaleString(undefined, {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+      });
+    } catch { return iso; }
+  }
+
+  return (
+    <div className="ap-modal-backdrop" onClick={() => { if (!editingId) onClose(); }}>
+      <div className="rm-panel" onClick={(e) => e.stopPropagation()}>
+
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="rm-header">
+          <div>
+            <h2 className="rm-title">🗂 Reports</h2>
+            <p className="rm-sub">
+              <code>{crisisEventId}</code>
+              {!loading && <span> · {reports.length} report{reports.length !== 1 ? "s" : ""}</span>}
+            </p>
+          </div>
+          <button className="ap-icon-btn" onClick={onClose}>✕</button>
+        </div>
+
+        {/* ── List ────────────────────────────────────────────────────────── */}
+        <div className="rm-list">
+          {loading && <div className="ap-loading">Loading reports…</div>}
+          {!loading && error && <div className="ap-error" style={{ margin: "1rem" }}>⚠ {error}</div>}
+          {!loading && !error && reports.length === 0 && (
+            <div className="ap-empty">No reports for this crisis event.</div>
+          )}
+
+          {reports.map((r) => (
+            <div
+              key={r.report_id}
+              className="rm-card"
+              style={{ borderLeftColor: DAMAGE_COLOUR[r.damage_level] ?? "#9ca3af" }}
+            >
+              {/* ── Summary row ─────────────────────────────────────────── */}
+              <div className="rm-row">
+                <div className="rm-row-body">
+                  <div className="rm-row-top">
+                    <span
+                      className="rm-damage-badge"
+                      style={{
+                        background: DAMAGE_COLOUR[r.damage_level] ? `${DAMAGE_COLOUR[r.damage_level]}18` : "#f3f4f6",
+                        color: DAMAGE_COLOUR[r.damage_level] ?? "#6b7280",
+                        border: `1px solid ${DAMAGE_COLOUR[r.damage_level] ?? "#d1d5db"}`,
+                      }}
+                    >
+                      {(r.damage_level || "unknown").toUpperCase()}
+                    </span>
+                    <span className="rm-infra">
+                      {r.infrastructure_types.map((t) => t.replace(/_/g, " ")).join(", ") || "—"}
+                    </span>
+                  </div>
+                  <div className="rm-row-meta">
+                    <span>{fmtTime(r.submitted_at)}</span>
+                    <span className="rm-dot">·</span>
+                    <span className="rm-channel">{r.channel}</span>
+                    {r.lat != null && (
+                      <>
+                        <span className="rm-dot">·</span>
+                        <span>{r.lat.toFixed(3)}, {r.lon?.toFixed(3)}</span>
+                      </>
+                    )}
+                    <span className="rm-dot">·</span>
+                    <code className="rm-id">{r.report_id}</code>
+                  </div>
+                </div>
+
+                <div className="rm-actions">
+                  {editingId !== r.report_id && confirmId !== r.report_id && (
+                    <>
+                      <button className="rm-btn rm-btn--edit" onClick={() => startEdit(r)}>
+                        Edit
+                      </button>
+                      <button
+                        className="rm-btn rm-btn--delete"
+                        onClick={() => setConfirmId(r.report_id)}
+                        disabled={deleting === r.report_id}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  {confirmId === r.report_id && (
+                    <>
+                      <span className="rm-confirm-label">Sure?</span>
+                      <button
+                        className="rm-btn rm-btn--confirm"
+                        disabled={deleting === r.report_id}
+                        onClick={() => handleDelete(r.report_id)}
+                      >
+                        {deleting === r.report_id ? "…" : "Yes"}
+                      </button>
+                      <button className="rm-btn rm-btn--cancel" onClick={() => setConfirmId(null)}>
+                        No
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Inline edit form ─────────────────────────────────────── */}
+              {editingId === r.report_id && (
+                <div className="rm-edit-form">
+                  <div className="rm-edit-grid2">
+                    {/* Damage level */}
+                    <label className="ap-label">
+                      Damage level
+                      <select
+                        className="ap-input"
+                        value={editDamage}
+                        onChange={(e) => setEditDamage(e.target.value)}
+                      >
+                        {DAMAGE_LEVELS.map((d) => (
+                          <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* placeholder for grid alignment */}
+                    <div />
+                  </div>
+
+                  {/* Infrastructure types */}
+                  <div className="ap-label" style={{ marginBottom: ".25rem" }}>Infrastructure types</div>
+                  <div className="rm-checkboxes">
+                    {INFRA_OPTIONS.map((opt) => (
+                      <label key={opt} className="rm-checkbox-label">
+                        <input type="checkbox" checked={editInfra.includes(opt)} onChange={() => toggleInfra(opt)} />
+                        {opt.replace(/_/g, " ")}
+                      </label>
+                    ))}
+                    {editInfra.filter((v) => !INFRA_OPTIONS.includes(v)).map((opt) => (
+                      <label key={opt} className="rm-checkbox-label">
+                        <input type="checkbox" checked onChange={() => toggleInfra(opt)} />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Custom field responses */}
+                  {Object.keys(editResponses).length > 0 && (
+                    <>
+                      <div className="rm-edit-section-title">Custom fields</div>
+                      <div className="rm-responses-grid">
+                        {Object.entries(editResponses).map(([key, val]) => (
+                          <label key={key} className="ap-label">
+                            {key.replace(/_/g, " ")}
+                            <input
+                              className="ap-input"
+                              value={val}
+                              onChange={(e) => setEditResponses((prev) => ({ ...prev, [key]: e.target.value }))}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {saveError && <div className="ap-error">⚠ {saveError}</div>}
+
+                  <div className="rm-edit-actions">
+                    <button
+                      className="rm-btn rm-btn--cancel"
+                      onClick={() => { setEditingId(null); setSaveError(null); }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="rm-btn rm-btn--save"
+                      disabled={saving}
+                      onClick={() => handleSave(r.report_id)}
+                    >
+                      {saving ? "Saving…" : "Save changes"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Footer ──────────────────────────────────────────────────────── */}
+        <div className="rm-footer">
+          <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   onClose: () => void;
   onSwitchCrisis: (id: string) => void;
@@ -273,6 +683,12 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const [schemaEditorId, setSchemaEditorId] = useState<string | null>(null);
+  const [reportsModalId, setReportsModalId] = useState<string | null>(null);
+  const [purgeConfirmId, setPurgeConfirmId] = useState<string | null>(null);
+  const [purging, setPurging] = useState<string | null>(null);
+  const [purgeResult, setPurgeResult] = useState<{ id: string; reports: number; blobs: number } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -316,6 +732,19 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
     if (isAuthed) load();
   }, [isAuthed, load]);
 
+  // Auto-reset click-to-confirm states after 4 seconds
+  useEffect(() => {
+    if (!deleteConfirmId) return;
+    const t = setTimeout(() => setDeleteConfirmId(null), 4000);
+    return () => clearTimeout(t);
+  }, [deleteConfirmId]);
+
+  useEffect(() => {
+    if (!purgeConfirmId) return;
+    const t = setTimeout(() => setPurgeConfirmId(null), 4000);
+    return () => clearTimeout(t);
+  }, [purgeConfirmId]);
+
   async function updateStatus(eventId: string, status: string) {
     setUpdating(eventId);
     try {
@@ -334,6 +763,49 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
       }
     } finally {
       setUpdating(null);
+    }
+  }
+
+  async function handlePurge(eventId: string) {
+    setPurging(eventId);
+    setPurgeConfirmId(null);
+    try {
+      const res = await fetch(
+        `${API_BASE}/v1/admin/crisis-events/${encodeURIComponent(eventId)}/data?confirm=yes`,
+        {
+          method: "DELETE",
+          headers: adminKey ? { "X-Admin-Key": adminKey } : {},
+        },
+      );
+      const data = await res.json();
+      setPurgeResult({ id: eventId, reports: data.deleted_reports ?? 0, blobs: data.deleted_blobs ?? 0 });
+      // Refresh stats after purge
+      load();
+    } catch {
+      // non-critical
+    } finally {
+      setPurging(null);
+    }
+  }
+
+  async function handleDeleteEvent(eventId: string) {
+    setDeleting(eventId);
+    setDeleteConfirmId(null);
+    try {
+      await fetch(
+        `${API_BASE}/v1/admin/crisis-events/${encodeURIComponent(eventId)}?confirm=yes`,
+        {
+          method: "DELETE",
+          headers: adminKey ? { "X-Admin-Key": adminKey } : {},
+        },
+      );
+      // Remove from local list immediately
+      setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+      setStats((prev) => { const s = { ...prev }; delete s[eventId]; return s; });
+    } catch {
+      // non-critical
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -374,120 +846,218 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
   return (
     <div className="ap-overlay">
       <div className="ap-panel">
+        {/* ── Panel header ────────────────────────────────────────────────── */}
         <div className="ap-panel-header">
-          <div>
-            <h1 className="ap-panel-title">⚙️ {t("admin.panel_title")}</h1>
+          <div className="ap-panel-icon">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="ap-panel-title-block">
+            <h1 className="ap-panel-title">{t("admin.panel_title")}</h1>
             <p className="ap-panel-sub">{t("admin.panel_sub")}</p>
           </div>
           <div className="ap-header-actions">
-            <button className="ap-btn ap-btn--primary" onClick={() => setShowCreate(true)}>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
               {t("admin.new_event")}
             </button>
             <button className="ap-icon-btn" onClick={onClose} title={t("admin.close")}>✕</button>
           </div>
         </div>
 
+        {/* ── Event list ──────────────────────────────────────────────────── */}
         <div className="ap-list">
           {loading && <div className="ap-loading">{t("admin.loading")}</div>}
           {!loading && events.length === 0 && (
             <div className="ap-empty">{t("admin.empty")}</div>
           )}
-          {events.map((ev) => (
-            <div
-              key={ev.id}
-              className={`ap-card${ev.id === activeCrisisId ? " ap-card--active" : ""}`}
-            >
-              <div className="ap-card-top">
-                <div className="ap-card-title">
-                  <span className="ap-nature-emoji">{NATURE_EMOJI[ev.crisis_nature] ?? "🌐"}</span>
-                  <span className="ap-card-name">{ev.name}</span>
-                  {ev.id === activeCrisisId && (
-                    <span className="ap-badge ap-badge--green">{t("admin.viewing")}</span>
+
+          {events.map((ev) => {
+            const totalReports = stats[ev.id]?.total_reports ?? null;
+            const isActive = ev.id === activeCrisisId;
+            const isConfirmingDelete = deleteConfirmId === ev.id;
+            const isConfirmingPurge = purgeConfirmId === ev.id;
+
+            return (
+              <div
+                key={ev.id}
+                className={`ec-card${isActive ? " ec-card--selected" : ""}`}
+              >
+                {/* Col 1, rows 1-2: emoji glyph */}
+                <div className="ec-glyph">{NATURE_EMOJI[ev.crisis_nature] ?? "🌐"}</div>
+
+                {/* Col 2, row 1: event name + Viewing badge */}
+                <div className="ec-head">
+                  <div className="ec-title">
+                    <span className="ec-name">{ev.name}</span>
+                    {isActive && (
+                      <span className="badge badge-viewing">{t("admin.viewing")}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Col 3, row 1: report count + status badges */}
+                <div className="ec-status">
+                  {totalReports !== null && (
+                    <span className={`badge badge-reports${totalReports === 0 ? " is-empty" : ""}`}>
+                      {totalReports === 0
+                        ? t("admin.no_reports_badge")
+                        : t(totalReports === 1 ? "admin.reports_badge_one" : "admin.reports_badge_other", { count: totalReports })}
+                    </span>
                   )}
-                  <span
-                    className="ap-status-dot"
-                    style={{ background: STATUS_COLOURS[ev.status] ?? "#888" }}
-                    title={ev.status}
+                  {ev.status === "active"   && <span className="badge badge-status-active">Active</span>}
+                  {ev.status === "archived" && <span className="badge badge-status-archived">Archived</span>}
+                  {ev.status === "paused"   && <span className="badge badge-status-paused">Paused</span>}
+                </div>
+
+                {/* Col 2, row 2: slug · region · created date · share pills */}
+                <div className="ec-meta">
+                  <span className="ec-slug">{ev.id}</span>
+                  <span className="ec-dot">·</span>
+                  <span>{ev.country_code}{ev.region ? ` / ${ev.region}` : ""}</span>
+                  <span className="ec-dot">·</span>
+                  <span>{t("admin.created", { date: fmt(ev.created_at, i18n.language) })}</span>
+                  <MetaCopyBtn
+                    url={pwaLink(ev.id)}
+                    label="PWA"
+                    icon={
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ marginRight: 3 }}>
+                        <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="2"/>
+                        <circle cx="12" cy="17" r="1.2" fill="currentColor"/>
+                      </svg>
+                    }
+                  />
+                  <MetaCopyBtn
+                    url={botLink(ev.id)}
+                    label="Bot"
+                    icon={
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ marginRight: 3 }}>
+                        <path d="M21 5L2 12.5l7 1M21 5l-6.5 15L9 13.5M21 5L9 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    }
                   />
                 </div>
-                <StatsBadge stats={stats[ev.id] ?? null} />
-              </div>
 
-              <div className="ap-card-meta">
-                <code className="ap-card-id">{ev.id}</code>
-                <span>·</span>
-                <span>{ev.country_code}{ev.region ? ` / ${ev.region}` : ""}</span>
-                <span>·</span>
-                <span>{t("admin.created", { date: fmt(ev.created_at, i18n.language) })}</span>
-                <span
-                  className="ap-status-label"
-                  style={{ color: STATUS_COLOURS[ev.status] ?? "#888" }}
-                >
-                  {ev.status}
-                </span>
-              </div>
+                {/* Row 3, all cols: action shelf */}
+                <div className="ec-shelf">
+                  {/* Left cluster: Open · Schema · Reports | Export */}
+                  <div className="ec-shelf-primary">
+                    <div className="ec-group">
+                      {!isActive && (
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => { onSwitchCrisis(ev.id); onClose(); }}
+                        >
+                          Open
+                        </button>
+                      )}
+                      <button className="btn btn-sm" onClick={() => setSchemaEditorId(ev.id)}>
+                        Schema
+                      </button>
+                      <button className="btn btn-sm" onClick={() => setReportsModalId(ev.id)}>
+                        Reports
+                      </button>
+                    </div>
 
-              <div className="ap-card-actions">
-                {ev.id !== activeCrisisId && (
-                  <button
-                    className="ap-btn ap-btn--sm ap-btn--ghost"
-                    onClick={() => { onSwitchCrisis(ev.id); onClose(); }}
-                  >
-                    {t("admin.view_dashboard")}
-                  </button>
-                )}
-                <button
-                  className="ap-btn ap-btn--sm ap-btn--ghost"
-                  onClick={() => setSchemaEditorId(ev.id)}
-                  title="Edit form schema"
-                >
-                  📋 {t("admin.schema_editor", { defaultValue: "Schema" })}
-                </button>
-                {ev.status === "active" ? (
-                  <button
-                    className="ap-btn ap-btn--sm ap-btn--warn"
-                    disabled={updating === ev.id}
-                    onClick={() => updateStatus(ev.id, "archived")}
-                  >
-                    {updating === ev.id ? "…" : t("admin.archive")}
-                  </button>
-                ) : (
-                  <button
-                    className="ap-btn ap-btn--sm ap-btn--ghost"
-                    disabled={updating === ev.id}
-                    onClick={() => updateStatus(ev.id, "active")}
-                  >
-                    {updating === ev.id ? "…" : t("admin.reactivate")}
-                  </button>
-                )}
-                <div className="ap-export-group">
-                  <span className="ap-export-label">{t("admin.export_label")}</span>
-                  {(["geojson", "csv", "shapefile"] as const).map((f) => (
-                    <a
-                      key={f}
-                      href={exportUrl(ev.id, f)}
-                      className="ap-btn ap-btn--sm ap-btn--ghost"
-                      download
+                    <div className="ec-divider-v" />
+
+                    <div className="ec-group">
+                      <span className="ec-group-label">Export</span>
+                      {(["geojson", "csv", "shapefile"] as const).map((f) => (
+                        <a
+                          key={f}
+                          href={exportUrl(ev.id, f)}
+                          className="btn btn-sm"
+                          download
+                        >
+                          {f === "geojson" ? "GeoJSON" : f === "shapefile" ? "Shapefile" : "CSV"}
+                        </a>
+                      ))}
+                    </div>
+
+                  </div>
+
+                  {/* Right cluster: Archive · Purge · Delete (separated by pseudo-divider) */}
+                  <div className="ec-danger-group">
+                    {ev.status === "active" ? (
+                      <button
+                        className="btn btn-sm btn-warn"
+                        disabled={updating === ev.id}
+                        onClick={() => updateStatus(ev.id, "archived")}
+                      >
+                        {updating === ev.id ? "…" : t("admin.archive")}
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-sm"
+                        disabled={updating === ev.id}
+                        onClick={() => updateStatus(ev.id, "active")}
+                      >
+                        {updating === ev.id ? "…" : t("admin.reactivate")}
+                      </button>
+                    )}
+
+                    <button
+                      className={`btn btn-sm btn-danger${isConfirmingPurge ? " is-confirming" : ""}`}
+                      disabled={purging === ev.id}
+                      onClick={() => {
+                        if (isConfirmingPurge) {
+                          handlePurge(ev.id);
+                        } else {
+                          setPurgeResult(null);
+                          setPurgeConfirmId(ev.id);
+                          setDeleteConfirmId(null);
+                        }
+                      }}
+                      title={isConfirmingPurge ? "Click again to confirm" : "Permanently delete all reports and photos"}
                     >
-                      {f.toUpperCase()}
-                    </a>
-                  ))}
+                      {purging === ev.id ? "…" : isConfirmingPurge ? "Confirm purge" : "Purge data"}
+                    </button>
+
+                    <button
+                      className={`btn btn-sm btn-danger${isConfirmingDelete ? " is-confirming" : ""}`}
+                      disabled={deleting === ev.id}
+                      onClick={() => {
+                        if (isConfirmingDelete) {
+                          handleDeleteEvent(ev.id);
+                        } else {
+                          setDeleteConfirmId(ev.id);
+                          setPurgeConfirmId(null);
+                        }
+                      }}
+                      title={isConfirmingDelete ? "Click again to confirm" : "Delete event and all its data"}
+                    >
+                      {deleting === ev.id ? "…" : isConfirmingDelete ? "Confirm delete" : "Delete"}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Purge success notification */}
+                {purgeResult?.id === ev.id && (
+                  <div className="ec-purge-result">
+                    ✓ Purged {purgeResult.reports} report{purgeResult.reports !== 1 ? "s" : ""} and {purgeResult.blobs} photo{purgeResult.blobs !== 1 ? "s" : ""}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
+        {/* ── Panel footer ────────────────────────────────────────────────── */}
         <div className="ap-panel-footer">
           <button
-            className="ap-btn ap-btn--ghost ap-btn--sm"
+            className="btn btn-sm"
             onClick={() => { sessionStorage.removeItem("admin_key"); setAdminKey(""); }}
           >
             {t("admin.sign_out")}
           </button>
-          <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={load}>
+          <button className="btn btn-sm" onClick={load}>
             {t("admin.refresh")}
           </button>
+          <span className="ap-footer-meta">
+            {events.length} event{events.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
@@ -504,6 +1074,14 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
           crisisEventId={schemaEditorId}
           adminKey={adminKey}
           onClose={() => setSchemaEditorId(null)}
+        />
+      )}
+
+      {reportsModalId && (
+        <ReportsModal
+          crisisEventId={reportsModalId}
+          adminKey={adminKey}
+          onClose={() => setReportsModalId(null)}
         />
       )}
     </div>

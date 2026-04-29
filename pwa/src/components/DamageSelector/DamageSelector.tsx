@@ -52,6 +52,7 @@ export function DamageSelector({ value, onChange, schemaOptions, lang = "en" }: 
               <strong>{levelLabel(level)}</strong>
               {levelSub(level) && <span>{levelSub(level)}</span>}
             </span>
+            <span className="damage-bar" />
           </label>
         ))}
       </div>

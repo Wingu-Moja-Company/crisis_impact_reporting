@@ -24,8 +24,25 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>{t("app.title")}</h1>
-        <LanguageToggle />
+        <div className="app-header-inner">
+          <div className="app-header-icon">
+            {/* Shield icon — trust / protection */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+          <div className="app-header-body">
+            <div className="app-header-title">{t("app.title")}</div>
+            <div className="app-header-sub">Crisis Reporting Platform</div>
+          </div>
+          <LanguageToggle />
+        </div>
       </header>
       <OfflineQueue />
       <main>

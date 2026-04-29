@@ -40,6 +40,15 @@ def _photo_url(blob_path: str | None) -> str | None:
         return None
 
 
+_EXPORT_PRECISION = 5  # decimal places ≈ 1.1 m — enough for building-level work,
+                       # prevents sub-metre location fingerprinting in public exports.
+
+
+def _round_coords(coords: list) -> list:
+    """Round [lon, lat] to _EXPORT_PRECISION decimal places for exported features."""
+    return [round(c, _EXPORT_PRECISION) for c in coords]
+
+
 def build_feature(doc: dict) -> dict | None:
     coords = doc.get("location", {}).get("coordinates")
     if not coords:
@@ -60,7 +69,7 @@ def build_feature(doc: dict) -> dict | None:
 
     return {
         "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": coords},
+        "geometry": {"type": "Point", "coordinates": _round_coords(coords)},
         "properties": {
             # Core identifiers
             "report_id":                doc["id"],
@@ -131,7 +140,7 @@ def export_current_buildings(
                 continue
         features.append({
             "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [lon, lat]},
+            "geometry": {"type": "Point", "coordinates": _round_coords([lon, lat])},
             "properties": {
                 "building_id":              doc["building_id"],
                 "crisis_event_id":          doc["crisis_event_id"],

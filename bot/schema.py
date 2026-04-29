@@ -82,14 +82,14 @@ _FALLBACK_SCHEMA: dict = {
                 "zh": "哪类基础设施受到影响？",
             },
             "options": [
-                {"value": "residential",  "labels": {"en": "🏠 Residential",   "fr": "🏠 Résidentiel",   "ar": "🏠 سكني",    "ru": "🏠 Жилой",                        "es": "🏠 Residencial",     "zh": "🏠 住宅"}},
-                {"value": "commercial",   "labels": {"en": "🏪 Commercial",    "fr": "🏪 Commercial",    "ar": "🏪 تجاري",   "ru": "🏪 Коммерческий",                "es": "🏪 Comercial",       "zh": "🏪 商业"}},
-                {"value": "government",   "labels": {"en": "🏛 Government",    "fr": "🏛 Gouvernement",  "ar": "🏛 حكومي",   "ru": "🏛 Государственный",             "es": "🏛 Gobierno",        "zh": "🏛 政府"}},
-                {"value": "utility",      "labels": {"en": "⚡ Utility",       "fr": "⚡ Services",      "ar": "⚡ مرافق",   "ru": "⚡ Коммунальный",                "es": "⚡ Servicios",       "zh": "⚡ 公用设施"}},
-                {"value": "transport",    "labels": {"en": "🛣 Transport",     "fr": "🛣 Transport",     "ar": "🛣 نقل",     "ru": "🛣 Транспорт",                   "es": "🛣 Transporte",      "zh": "🛣 交通"}},
-                {"value": "community",    "labels": {"en": "🏫 Community",     "fr": "🏫 Communauté",   "ar": "🏫 مجتمعي",  "ru": "🏫 Общественный",                "es": "🏫 Comunidad",       "zh": "🏫 社区"}},
-                {"value": "public_space", "labels": {"en": "🏟 Public space",  "fr": "🏟 Espace public", "ar": "🏟 فضاء عام", "ru": "🏟 Общественное пространство",  "es": "🏟 Espacio público", "zh": "🏟 公共空间"}},
-                {"value": "other",        "labels": {"en": "❓ Other",         "fr": "❓ Autre",         "ar": "❓ أخرى",    "ru": "❓ Другое",                       "es": "❓ Otro",            "zh": "❓ 其他"}},
+                {"value": "residential",  "labels": {"en": "Residential",   "fr": "Résidentiel",   "ar": "سكني",    "ru": "Жилой",                        "es": "Residencial",     "zh": "住宅"}},
+                {"value": "commercial",   "labels": {"en": "Commercial",    "fr": "Commercial",    "ar": "تجاري",   "ru": "Коммерческий",                "es": "Comercial",       "zh": "商业"}},
+                {"value": "government",   "labels": {"en": "Government",    "fr": "Gouvernement",  "ar": "حكومي",   "ru": "Государственный",             "es": "Gobierno",        "zh": "政府"}},
+                {"value": "utility",      "labels": {"en": "Utility",       "fr": "Services",      "ar": "مرافق",   "ru": "Коммунальный",                "es": "Servicios",       "zh": "公用设施"}},
+                {"value": "transport",    "labels": {"en": "Transport",     "fr": "Transport",     "ar": "نقل",     "ru": "Транспорт",                   "es": "Transporte",      "zh": "交通"}},
+                {"value": "community",    "labels": {"en": "Community",     "fr": "Communauté",   "ar": "مجتمعي",  "ru": "Общественный",                "es": "Comunidad",       "zh": "社区"}},
+                {"value": "public_space", "labels": {"en": "Public space",  "fr": "Espace public", "ar": "فضاء عام", "ru": "Общественное пространство",  "es": "Espacio público", "zh": "公共空间"}},
+                {"value": "other",        "labels": {"en": "Other",         "fr": "Autre",         "ar": "أخرى",    "ru": "Другое",                       "es": "Otro",            "zh": "其他"}},
             ],
         },
     },
@@ -106,6 +106,29 @@ def fallback_schema() -> dict:
 # ---------------------------------------------------------------------------
 # API fetch
 # ---------------------------------------------------------------------------
+
+def fetch_events() -> list[dict]:
+    """
+    Fetch all crisis events from the API.
+    Returns a list of event dicts on success, or [] on failure.
+    """
+    url = f"{_api_base()}/v1/crisis-events"
+    headers = {}
+    if key := _ingest_key():
+        headers["X-API-Key"] = key
+
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read())
+        # API may return a list directly or {"events": [...]}
+        if isinstance(data, list):
+            return data
+        return data.get("events", data.get("items", []))
+    except Exception as exc:
+        logger.warning("fetch_events failed (%s: %s)", type(exc).__name__, exc)
+        return []
+
 
 def fetch_schema(crisis_event_id: str) -> dict:
     """

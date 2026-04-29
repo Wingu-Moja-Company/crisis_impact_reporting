@@ -55,7 +55,8 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     }
   }, [schemaVersion]);
 
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef   = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     setSchemaUpdated(false);
     firstVersion.current = null;
     if (fileRef.current) fileRef.current.value = "";
+    if (cameraRef.current) cameraRef.current.value = "";
   }
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -257,8 +259,14 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Photo */}
       <div className="form-card">
-        <span className="form-card-label">{t("form.section_photo")}</span>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} hidden />
+        <div className="form-card-label">
+          <span className="sec-num" />
+          {t("form.section_photo")}
+        </div>
+        {/* Camera input (capture from device camera) */}
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} hidden />
+        {/* Gallery input (choose existing file) */}
+        <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} hidden />
         {photo ? (
           <>
             <img src={photo} alt="preview" className="photo-preview" />
@@ -267,25 +275,61 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
             </button>
           </>
         ) : (
-          <div className="photo-upload-area" onClick={() => fileRef.current?.click()}>
-            <span className="photo-upload-icon">📷</span>
-            <span>{t("form.photo_prompt")}</span>
-            <span style={{ fontSize: ".75rem", color: "var(--grey-300)" }}>JPG, PNG, HEIC</span>
-          </div>
+          <>
+            <div className="photo-drop">
+              <div className="photo-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"
+                    stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                  <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8" />
+                </svg>
+              </div>
+              <span className="photo-hint">{t("form.photo_prompt")}</span>
+            </div>
+            <div className="photo-btns">
+              <button type="button" className="photo-btn" onClick={() => cameraRef.current?.click()}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"/>
+                  <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.8"/>
+                </svg>
+                {t("form.take_photo")}
+              </button>
+              <button type="button" className="photo-btn" onClick={() => fileRef.current?.click()}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="17 8 12 3 7 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                {t("form.choose_photo")}
+              </button>
+            </div>
+          </>
         )}
       </div>
 
       {/* Location */}
       <div className="form-card">
-        <span className="form-card-label">{t("form.section_location")}</span>
+        <div className="form-card-label">
+          <span className="sec-num" />
+          {t("form.section_location")}
+        </div>
         <div className="location-card">
           <button type="button" className="gps-btn" onClick={requestGps} disabled={gpsLoading}>
-            <span>📍</span>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/>
+              <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
             {gpsLoading ? t("form.getting_gps") : t("form.use_gps")}
           </button>
           {coords && (
             <div className="gps-confirmed">
-              ✓ {t("form.gps_confirmed")} ({coords.lat.toFixed(4)}, {coords.lon.toFixed(4)})
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {t("form.gps_confirmed")} ({coords.lat.toFixed(4)}, {coords.lon.toFixed(4)})
             </div>
           )}
           {!coords && (
@@ -323,11 +367,12 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Damage level — mandatory system field */}
       <div className="form-card">
-        <span className="form-card-label">
+        <div className="form-card-label">
+          <span className="sec-num" />
           {schema
             ? getLabel(schema.system_fields?.damage_level?.labels, lang)
             : t("form.section_damage")}
-        </span>
+        </div>
         <DamageSelector
           value={damageLevel}
           onChange={setDamageLevel}
@@ -338,11 +383,12 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Infrastructure type — mandatory system field */}
       <div className="form-card">
-        <span className="form-card-label">
+        <div className="form-card-label">
+          <span className="sec-num" />
           {schema
             ? getLabel(schema.system_fields?.infrastructure_type?.labels, lang)
             : t("form.section_infra")}
-        </span>
+        </div>
         <InfraTypeSelector
           selected={infraTypes}
           onChange={setInfraTypes}
@@ -366,10 +412,18 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
 
       {/* Description (always optional, not in schema custom_fields) */}
       <div className="form-card">
-        <span className="form-card-label">
-          {t("form.section_description")}{" "}
-          <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t("form.optional")}</span>
-        </span>
+        <div className="form-card-label">
+          <span className="sec-num" />
+          {t("form.section_description")}
+          <span className="sec-optional">{t("form.optional")}</span>
+        </div>
+        <p className="form-pii-warning">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, flexShrink: 0 }}>
+            <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.8"/>
+            <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+          {t("form.description_pii_warning")}
+        </p>
         <textarea
           className="description-textarea"
           placeholder={t("form.description_placeholder")}

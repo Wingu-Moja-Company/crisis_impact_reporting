@@ -5,6 +5,7 @@ import urllib.request
 import urllib.error
 
 from telegram import CallbackQuery
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
@@ -46,7 +47,8 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     # ── Build payload ────────────────────────────────────────────────────────
-    crisis_event_id = os.environ.get("CRISIS_EVENT_ID", "ke-flood-dev")
+    # Use the event ID pinned at /start (from deep link or env var fallback)
+    crisis_event_id = ud.get("crisis_event_id") or os.environ.get("CRISIS_EVENT_ID", "ke-flood-dev")
     schema = ud.get("schema", {})
     schema_version = schema.get("version")
 
@@ -101,7 +103,7 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
         msg = t("confirm", lang, report_id=report_id, map_url=map_url)
     else:
         msg = t("confirm_no_url", lang, report_id=report_id)
-    await query.edit_message_text(msg)
+    await query.edit_message_text(msg, parse_mode=ParseMode.HTML)
 
     for badge in result.get("badges_awarded", []):
         await context.bot.send_message(
@@ -109,7 +111,29 @@ async def submit(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> No
             text=t("badge_awarded", lang, badge_name=badge),
         )
 
+    # ── Preserve session-level data across submissions ────────────────────────
+    # Clearing user_data resets the form, but we keep the event binding and
+    # schema so a follow-up /start re-enters the same crisis event without
+    # requiring another deep-link.
+    _crisis_event_id = ud.get("crisis_event_id")
+    _schema = ud.get("schema")
+    _lang = lang
+
     context.user_data.clear()
+
+    if _crisis_event_id:
+        context.user_data["crisis_event_id"] = _crisis_event_id
+    if _schema:
+        context.user_data["schema"] = _schema
+    context.user_data["lang"] = _lang
+
+    # Invite the user to file another report for the same event
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text=(
+            "To submit another report for this event, send /start."
+        ),
+    )
 
 
 def _post_report(fields: dict, photo_bytes: bytes | None, submitter_id: str) -> dict:

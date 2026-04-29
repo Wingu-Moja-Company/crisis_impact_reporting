@@ -18,6 +18,8 @@
       "section_needs": "最迫切需求",
       "section_description": "其他详情",
       "optional": "（可选）",
+      "take_photo": "拍照",
+      "choose_photo": "上传文件",
       "change_photo": "更换照片",
       "use_gps": "使用我的GPS位置",
       "getting_gps": "正在获取位置…",

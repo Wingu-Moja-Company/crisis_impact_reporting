@@ -172,17 +172,42 @@ Set under **Settings → Secrets and variables → Actions**:
 
 ### Azure Functions
 
+The preferred deploy method is `func azure functionapp publish` which automatically triggers a remote Oryx build (installs `requirements.txt` on Azure):
+
 ```bash
 cd functions
 func azure functionapp publish func-crisis-pipeline-ob7ravt3zfbzi --python
 ```
 
-Uses remote Oryx build on Azure — no local Docker required. Repeat with `bot/` for the Telegram bot:
+Repeat with `bot/` for the Telegram bot:
 
 ```bash
 cd bot
 func azure functionapp publish func-crisis-bot-ob7ravt3zfbzi --python
 ```
+
+If you must use `az functionapp deployment source config-zip` instead, **always include `--build-remote true`**:
+
+```bash
+cd functions
+zip -r /tmp/functions_deploy.zip . -x "*.pyc" -x "__pycache__/*" -x ".git/*" -x "tests/*"
+az functionapp deployment source config-zip \
+  --name func-crisis-pipeline-ob7ravt3zfbzi \
+  --resource-group rg-crisis-platform-dev \
+  --src /tmp/functions_deploy.zip \
+  --build-remote true
+```
+
+> **Warning — missing packages after zip deploy:**  
+> If you deploy a zip *without* `--build-remote true`, Azure copies the source files but does
+> **not** reinstall Python packages. All function endpoints will return HTTP 500 with
+> `ModuleNotFoundError: No module named 'azure.cosmos'`. Recovery steps:
+>
+> 1. Redeploy with `--build-remote true` (triggers Oryx to run `pip install -r requirements.txt`).
+> 2. Wait ~2 minutes for the build to complete, then poll until the endpoint returns 200.
+>
+> The app setting `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is permanently set on the function app
+> as a safety net, but using `--build-remote true` explicitly is the most reliable approach.
 
 The bot function app needs `INGEST_API_KEY` in its app settings (it is sent as `X-API-Key`
 on every report submission). If deploying a fresh environment, set it once:

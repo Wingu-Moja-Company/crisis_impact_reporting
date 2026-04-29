@@ -6,6 +6,7 @@ import urllib.parse
 import urllib.request
 
 from telegram import ReplyKeyboardRemove, Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
@@ -111,6 +112,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         damage_question,
         reply_markup=dynamic.build_damage_level(schema, lang),
+        parse_mode=ParseMode.HTML,
     )
 
 

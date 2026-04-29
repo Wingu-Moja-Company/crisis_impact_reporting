@@ -30,10 +30,12 @@ class TestDamageReportSubmission:
     def _submission(self, **kwargs) -> DamageReportSubmission:
         """Build a minimal valid submission, merging kwargs."""
         defaults = {
-            "damage_level": DamageLevel.partial,
+            "damage_level": DamageLevel.PARTIAL,
             "infrastructure_types": ["residential"],
             "crisis_event_id": "ke-flood-dev",
             "channel": "pwa",
+            # Location is required by the validator — use a description for unit tests
+            "location_description": "Near test market",
         }
         defaults.update(kwargs)
         return DamageReportSubmission(**defaults)
@@ -146,7 +148,7 @@ class TestDamageReportSubmission:
         """Empty infrastructure_types raises a validation error."""
         with pytest.raises(Exception):
             DamageReportSubmission(
-                damage_level=DamageLevel.partial,
+                damage_level=DamageLevel.PARTIAL,
                 infrastructure_types=[],  # must be non-empty
                 crisis_event_id="ke-flood-dev",
                 channel="pwa",

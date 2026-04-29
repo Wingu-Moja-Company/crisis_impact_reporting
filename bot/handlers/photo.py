@@ -1,4 +1,5 @@
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from i18n.strings import t
@@ -35,4 +36,5 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         t("send_location", lang),
         reply_markup=_location_keyboard(lang),
+        parse_mode=ParseMode.HTML,
     )

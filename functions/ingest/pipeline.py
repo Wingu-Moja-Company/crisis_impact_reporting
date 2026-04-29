@@ -6,6 +6,7 @@ Functions HTTP trigger which returns a 500 to the caller.
 
 import base64
 import hashlib
+import hmac as _hmac
 import io
 import json
 import logging
@@ -221,6 +222,17 @@ def _ai_vision_score(photo_bytes: bytes, crisis_nature: str | None = None) -> di
 
 
 def _submitter_hash(raw_id: str) -> str:
+    """
+    One-way pseudonymous identifier for the submitter.
+    Uses HMAC-SHA256 keyed on SUBMITTER_SALT env var so the mapping cannot be
+    brute-forced even for sequential inputs (e.g. Telegram user IDs).
+    Falls back to plain SHA-256 in dev when no salt is configured.
+    """
+    salt = os.environ.get("SUBMITTER_SALT", "")
+    if salt:
+        digest = _hmac.new(salt.encode(), raw_id.encode(), "sha256").hexdigest()
+        return "hmac_" + digest[:16]
+    # Dev / unsalted fallback — clearly labelled so it's easy to spot in data
     return "sha256_" + hashlib.sha256(raw_id.encode()).hexdigest()[:16]
 
 
@@ -307,9 +319,15 @@ def process_report(
     crisis_nature = submission.get_crisis_nature()
     requires_debris = submission.get_requires_debris_clearing()
 
+    # Data retention: TTL in seconds. Default 2 years; override via REPORT_TTL_SECONDS env var.
+    # The Cosmos DB container must have TTL enabled (defaultTtl: -1) for this to take effect.
+    _DEFAULT_TTL = 2 * 365 * 24 * 3600  # 63 072 000 s ≈ 2 years
+    report_ttl = int(os.environ.get("REPORT_TTL_SECONDS", _DEFAULT_TTL))
+
     report_doc = {
         "id": report_id,
         "crisis_event_id": submission.crisis_event_id,
+        "ttl": report_ttl,
         "building_id": building_id,
         "submitted_at": submitted_at,
         "channel": submission.channel,

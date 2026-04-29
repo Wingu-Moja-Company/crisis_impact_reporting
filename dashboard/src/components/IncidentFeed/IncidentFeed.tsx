@@ -8,6 +8,7 @@ interface Props {
   selectedReportId: string | null;
   onSelect: (reportId: string) => void;
   schema?: FormSchema | null;
+  lastFetched?: number | null;
 }
 
 const DAMAGE_COLORS: Record<string, string> = {
@@ -20,7 +21,7 @@ const CHANNEL_ICON: Record<string, string> = {
   telegram: "📱", pwa: "🌐", sms: "💬", api: "🔌",
 };
 
-export function IncidentFeed({ reports, selectedReportId, onSelect, schema }: Props) {
+export function IncidentFeed({ reports, selectedReportId, onSelect, schema, lastFetched }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.slice(0, 2) || "en";
 
@@ -62,7 +63,7 @@ export function IncidentFeed({ reports, selectedReportId, onSelect, schema }: Pr
   if (reports.length === 0) {
     return (
       <div className="feed-empty">
-        <p>{t("feed.loading")}</p>
+        <p>{lastFetched ? t("feed.no_reports") : t("feed.loading")}</p>
       </div>
     );
   }

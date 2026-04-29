@@ -18,6 +18,8 @@
       "section_needs": "Besoins les plus urgents",
       "section_description": "Détails supplémentaires",
       "optional": "(facultatif)",
+      "take_photo": "Prendre une photo",
+      "choose_photo": "Télécharger un fichier",
       "change_photo": "Changer de photo",
       "use_gps": "Utiliser ma position GPS",
       "getting_gps": "Récupération de la position…",

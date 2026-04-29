@@ -2,6 +2,7 @@
 Unit tests for functions/schema/service.py and functions/schema/handlers.py.
 
 All Cosmos DB calls are mocked — no Azure credentials required.
+Azure SDK stubs are injected by conftest.py before this module loads.
 
 Run:
     cd functions
@@ -11,12 +12,45 @@ Run:
 import json
 import os
 import sys
-import unittest.mock as mock
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# Force schema submodules to be importable as attributes (conftest stubs azure first)
+import importlib
+import schema.service   # noqa: F401  — registers schema.service in sys.modules
+import schema.handlers  # noqa: F401  — registers schema.handlers in sys.modules
+import schema.defaults  # noqa: F401
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _events_mock(doc=None, raise_not_found=False):
+    """Return a mock Cosmos container for the crisis_events container."""
+    m = MagicMock()
+    if raise_not_found:
+        from azure.cosmos import exceptions as _exc
+        m.read_item.side_effect = _exc.CosmosResourceNotFoundError()
+    elif doc is not None:
+        m.read_item.return_value = doc
+    return m
+
+
+def _schemas_mock(docs=None, raise_not_found=False):
+    """Return a mock Cosmos container for the schemas container."""
+    m = MagicMock()
+    if raise_not_found:
+        from azure.cosmos import exceptions as _exc
+        m.read_item.side_effect = _exc.CosmosResourceNotFoundError()
+    elif docs is not None:
+        m.read_item.return_value = docs[0] if docs else None
+        m.query_items.return_value = iter(docs)
+    return m
+
 
 # ---------------------------------------------------------------------------
 # Schema service tests
@@ -25,31 +59,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 class TestSchemaService:
     """Test schema.service functions with mocked Cosmos DB."""
 
-    def _make_container_mock(self, docs: list[dict]) -> MagicMock:
-        """Return a mock container whose query_items returns docs."""
-        container = MagicMock()
-        container.query_items.return_value = iter(docs)
-        return container
+    # ── get_current_schema ──────────────────────────────────────────────────
 
-    @patch("schema.service._container")
-    def test_get_current_schema_returns_none_when_empty(self, mock_container_fn):
-        """Returns None when no schemas exist for a crisis event."""
+    def test_get_current_schema_returns_none_when_event_missing(self):
+        """Returns None when crisis event does not exist."""
         from schema.service import get_current_schema
 
-        schemas_mock = self._make_container_mock([])
-        events_mock = self._make_container_mock([])
-
-        def container_side_effect(name):
-            return schemas_mock if name == "schemas" else events_mock
-
-        mock_container_fn.side_effect = container_side_effect
-
-        result = get_current_schema("nonexistent-event")
+        ev = _events_mock(raise_not_found=True)
+        with patch("schema.service._events", return_value=ev):
+            result = get_current_schema("nonexistent-event")
         assert result is None
 
-    @patch("schema.service._container")
-    def test_get_current_schema_returns_latest(self, mock_container_fn):
-        """Returns schema when one exists."""
+    def test_get_current_schema_returns_latest(self):
+        """Returns schema when event has current_schema_version pointer."""
         from schema.service import get_current_schema
 
         schema_doc = {
@@ -60,101 +82,84 @@ class TestSchemaService:
             "system_fields": {"damage_level": {}, "infrastructure_type": {}},
             "custom_fields": [],
         }
-        schemas_mock = self._make_container_mock([schema_doc])
-        events_mock = self._make_container_mock([
-            {"id": "test-event", "current_schema_version": 1}
-        ])
+        ev = _events_mock({"id": "test-event", "current_schema_version": 1})
+        sc = MagicMock()
+        sc.read_item.return_value = schema_doc
 
-        def container_side_effect(name):
-            return schemas_mock if name == "schemas" else events_mock
+        with patch("schema.service._events",  return_value=ev), \
+             patch("schema.service._schemas", return_value=sc):
+            result = get_current_schema("test-event")
 
-        mock_container_fn.side_effect = container_side_effect
-
-        result = get_current_schema("test-event")
         assert result is not None
         assert result["version"] == 1
         assert result["crisis_event_id"] == "test-event"
 
-    @patch("schema.service._container")
-    def test_get_version_only(self, mock_container_fn):
+    # ── get_version_only ────────────────────────────────────────────────────
+
+    def test_get_version_only(self):
         """Returns version number from crisis event doc."""
         from schema.service import get_version_only
 
-        events_mock = self._make_container_mock([
-            {"id": "test-event", "current_schema_version": 3}
-        ])
-        mock_container_fn.return_value = events_mock
-
-        result = get_version_only("test-event")
+        ev = _events_mock({"id": "test-event", "current_schema_version": 3})
+        with patch("schema.service._events", return_value=ev):
+            result = get_version_only("test-event")
         assert result == 3
 
-    @patch("schema.service._container")
-    def test_get_version_only_returns_none_when_missing(self, mock_container_fn):
-        """Returns None when crisis event has no schema version."""
+    def test_get_version_only_returns_none_when_missing(self):
+        """Returns None when crisis event does not exist."""
         from schema.service import get_version_only
 
-        events_mock = self._make_container_mock([{"id": "test-event"}])
-        mock_container_fn.return_value = events_mock
-
-        result = get_version_only("test-event")
+        ev = _events_mock(raise_not_found=True)
+        with patch("schema.service._events", return_value=ev):
+            result = get_version_only("test-event")
         assert result is None
 
-    @patch("schema.service._container")
-    def test_publish_schema_increments_version(self, mock_container_fn):
+    # ── publish_schema ──────────────────────────────────────────────────────
+
+    def test_publish_schema_increments_version(self):
         """Publish creates version N+1 doc."""
         from schema.service import publish_schema
 
-        schemas_mock = MagicMock()
-        schemas_mock.query_items.return_value = iter([
-            {"id": "schema_test_v1", "crisis_event_id": "test", "version": 1}
-        ])
-        schemas_mock.upsert_item = MagicMock()
+        # _get_max_version queries schemas; publish then writes to both containers
+        sc = MagicMock()
+        sc.query_items.return_value = iter([1])   # MAX version returns 1
+        sc.upsert_item = MagicMock()
 
-        events_mock = MagicMock()
-        events_mock.query_items.return_value = iter([
-            {"id": "test", "current_schema_version": 1}
-        ])
-        events_mock.upsert_item = MagicMock()
+        ev = _events_mock({"id": "test", "current_schema_version": 1})
+        ev.upsert_item = MagicMock()
 
-        def container_side_effect(name):
-            return schemas_mock if name == "schemas" else events_mock
-
-        mock_container_fn.side_effect = container_side_effect
-
-        body = {"system_fields": {}, "custom_fields": []}
-        result = publish_schema("test", body, "admin")
+        with patch("schema.service._schemas", return_value=sc), \
+             patch("schema.service._events",  return_value=ev):
+            body = {"system_fields": {}, "custom_fields": []}
+            result = publish_schema("test", body, "admin")
 
         assert result["version"] == 2
         assert result["crisis_event_id"] == "test"
         assert result["published_by"] == "admin"
-        schemas_mock.upsert_item.assert_called_once()
+        sc.upsert_item.assert_called_once()
 
-    @patch("schema.service._container")
-    def test_publish_schema_first_version(self, mock_container_fn):
+    def test_publish_schema_first_version(self):
         """Publish creates v1 when no existing schema."""
         from schema.service import publish_schema
 
-        schemas_mock = MagicMock()
-        schemas_mock.query_items.return_value = iter([])
-        schemas_mock.upsert_item = MagicMock()
+        sc = MagicMock()
+        sc.query_items.return_value = iter([None])  # MAX returns None (no docs)
+        sc.upsert_item = MagicMock()
 
-        events_mock = MagicMock()
-        events_mock.query_items.return_value = iter([])
-        events_mock.upsert_item = MagicMock()
+        ev = _events_mock(raise_not_found=True)
+        ev.upsert_item = MagicMock()
 
-        def container_side_effect(name):
-            return schemas_mock if name == "schemas" else events_mock
-
-        mock_container_fn.side_effect = container_side_effect
-
-        body = {"system_fields": {}, "custom_fields": []}
-        result = publish_schema("new-event", body, "admin")
+        with patch("schema.service._schemas", return_value=sc), \
+             patch("schema.service._events",  return_value=ev):
+            body = {"system_fields": {}, "custom_fields": []}
+            result = publish_schema("new-event", body, "admin")
 
         assert result["version"] == 1
 
-    @patch("schema.service._container")
-    def test_list_schema_history(self, mock_container_fn):
-        """Returns list of version metadata."""
+    # ── list_schema_history ─────────────────────────────────────────────────
+
+    def test_list_schema_history(self):
+        """Returns list of version metadata with custom_field_count."""
         from schema.service import list_schema_history
 
         docs = [
@@ -169,37 +174,50 @@ class TestSchemaService:
                 "published_by": "admin", "custom_fields": [{"id": "water_level"}],
             },
         ]
-        schemas_mock = self._make_container_mock(docs)
-        mock_container_fn.return_value = schemas_mock
+        sc = MagicMock()
+        sc.query_items.return_value = iter(docs)
+        with patch("schema.service._schemas", return_value=sc):
+            result = list_schema_history("test")
 
-        result = list_schema_history("test")
         assert len(result) == 2
         assert result[0]["version"] == 1
+        assert result[0]["custom_field_count"] == 0
         assert result[1]["custom_field_count"] == 1
 
-    @patch("schema.service._container")
-    def test_seed_schema_is_idempotent(self, mock_container_fn):
-        """seed_schema skips if a schema already exists."""
+    # ── seed_schema ─────────────────────────────────────────────────────────
+
+    def test_seed_schema_is_idempotent(self):
+        """seed_schema returns None (skips) if a schema already exists."""
         from schema.service import seed_schema
 
-        existing_doc = {
-            "id": "schema_test_v1", "crisis_event_id": "test", "version": 1,
-        }
-        schemas_mock = self._make_container_mock([existing_doc])
-        schemas_mock.upsert_item = MagicMock()
-        events_mock = self._make_container_mock([
-            {"id": "test", "current_schema_version": 1}
-        ])
+        sc = MagicMock()
+        sc.query_items.return_value = iter([1])  # MAX version = 1 → already seeded
+        sc.upsert_item = MagicMock()
 
-        def container_side_effect(name):
-            return schemas_mock if name == "schemas" else events_mock
+        with patch("schema.service._schemas", return_value=sc):
+            result = seed_schema("test", {"system_fields": {}, "custom_fields": []})
 
-        mock_container_fn.side_effect = container_side_effect
+        # Should return None (idempotent — no new doc written)
+        assert result is None
+        sc.upsert_item.assert_not_called()
 
-        result = seed_schema("test", {"system_fields": {}, "custom_fields": []})
-        # Should return existing doc, not create new one
+    def test_seed_schema_creates_v1_when_empty(self):
+        """seed_schema creates v1 when no schema exists."""
+        from schema.service import seed_schema
+
+        sc = MagicMock()
+        sc.query_items.return_value = iter([None])  # no existing schema
+        sc.upsert_item = MagicMock()
+
+        ev = _events_mock(raise_not_found=True)
+
+        with patch("schema.service._schemas", return_value=sc), \
+             patch("schema.service._events",  return_value=ev):
+            result = seed_schema("new-event", {"system_fields": {}, "custom_fields": []})
+
         assert result is not None
-        schemas_mock.upsert_item.assert_not_called()
+        assert result["version"] == 1
+        sc.upsert_item.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -268,18 +286,13 @@ class TestSchemaDefaults:
 class TestSchemaHandlers:
     """Test HTTP handlers with mocked service functions."""
 
-    def _make_request(self, params: dict | None = None, body: dict | None = None,
-                      method: str = "GET", headers: dict | None = None,
-                      event_id: str = "test"):
+    def _make_request(self, params=None, body=None, method="GET", headers=None, event_id="test"):
         req = MagicMock()
         req.method = method
         req.params = params or {}
         req.headers = headers or {}
         req.route_params = {"event_id": event_id}
-        if body is not None:
-            req.get_json.return_value = body
-        else:
-            req.get_json.return_value = None
+        req.get_json.return_value = body
         return req
 
     @patch("schema.handlers.get_current_schema")
@@ -339,8 +352,10 @@ class TestSchemaHandlers:
         from schema.handlers import post_schema
         import os as _os
 
-        mock_publish.return_value = {"version": 2, "crisis_event_id": "test", "custom_fields": [], "system_fields": {}}
-
+        mock_publish.return_value = {
+            "version": 2, "crisis_event_id": "test",
+            "custom_fields": [], "system_fields": {},
+        }
         with patch.dict(_os.environ, {"ADMIN_API_KEY": "secret"}):
             req = self._make_request(
                 method="POST",

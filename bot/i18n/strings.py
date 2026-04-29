@@ -2,12 +2,36 @@
 
 STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
-        "en": "Welcome to the Crisis Damage Reporter. Send a photo of the damage to begin.",
-        "ar": "مرحبًا بك في نظام الإبلاغ عن أضرار الأزمات. أرسل صورة للضرر للبدء.",
-        "fr": "Bienvenue sur le système de signalement des dommages de crise. Envoyez une photo des dégâts pour commencer.",
-        "zh": "欢迎使用危机损害报告系统。请发送一张受损照片以开始报告。",
-        "ru": "Добро пожаловать в систему отчётов об ущербе в кризисных ситуациях. Отправьте фото повреждений, чтобы начать.",
-        "es": "Bienvenido al sistema de reporte de daños en crisis. Envíe una foto del daño para comenzar.",
+        "en": (
+            "<b>Crisis Damage Reporter</b>\n\n"
+            "Thank you for helping document this crisis. Your report goes directly to coordinators on the ground.\n\n"
+            "Please send a photo of the damaged site to begin."
+        ),
+        "ar": (
+            "<b>نظام الإبلاغ عن أضرار الأزمات</b>\n\n"
+            "شكراً لمساعدتك في توثيق هذه الأزمة. يصل تقريرك مباشرةً إلى المنسقين الميدانيين.\n\n"
+            "يرجى إرسال صورة للموقع المتضرر للبدء."
+        ),
+        "fr": (
+            "<b>Système de signalement des dommages</b>\n\n"
+            "Merci de contribuer à la documentation de cette crise. Votre rapport parvient directement aux coordinateurs sur le terrain.\n\n"
+            "Envoyez une photo du site endommagé pour commencer."
+        ),
+        "zh": (
+            "<b>危机损害报告系统</b>\n\n"
+            "感谢您协助记录本次危机。您的报告将直接传达给现场协调人员。\n\n"
+            "请发送受损现场的照片以开始报告。"
+        ),
+        "ru": (
+            "<b>Система отчётов об ущербе</b>\n\n"
+            "Спасибо за помощь в документировании кризиса. Ваш отчёт поступает напрямую к координаторам на месте.\n\n"
+            "Отправьте фото повреждённого объекта, чтобы начать."
+        ),
+        "es": (
+            "<b>Sistema de reporte de daños en crisis</b>\n\n"
+            "Gracias por ayudar a documentar esta crisis. Su informe llega directamente a los coordinadores sobre el terreno.\n\n"
+            "Envíe una foto del sitio dañado para comenzar."
+        ),
     },
     "send_photo": {
         "en": "Please send a photo of the damaged structure.",
@@ -18,70 +42,64 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "Por favor envíe una foto de la estructura dañada.",
     },
     "photo_received": {
-        "en": "Photo received. Now select the location of the damage.",
-        "ar": "تم استلام الصورة. الآن حدد موقع الضرر.",
-        "fr": "Photo reçue. Sélectionnez maintenant l'emplacement des dommages.",
-        "zh": "照片已收到。请选择受损位置。",
-        "ru": "Фото получено. Теперь укажите местоположение повреждений.",
-        "es": "Foto recibida. Ahora seleccione la ubicación del daño.",
+        "en": "Photo received.",
+        "ar": "تم استلام الصورة.",
+        "fr": "Photo reçue.",
+        "zh": "照片已收到。",
+        "ru": "Фото получено.",
+        "es": "Foto recibida.",
     },
     "send_location": {
         "en": (
-            "📍 Where is the damage?\n\n"
-            "Best: tap the 📎 attachment button → Location to share your GPS.\n\n"
-            "Or type a street address, landmark, or neighbourhood "
-            "(e.g. \"Near Mathare Market\").\n\n"
-            "Have a 3-word location code? Type it like: filled.count.soap"
+            "<b>Location of damage</b>\n\n"
+            "Share your GPS location using the 📎 attachment button, "
+            "or type a street address or nearby landmark.\n\n"
+            "<i>Example: Near Westlands Market, Kibera Road</i>"
         ),
         "ar": (
-            "📍 أين الضرر؟\n\n"
-            "الأفضل: اضغط على زر المرفقات 📎 ← الموقع لمشاركة نظام تحديد المواقع.\n\n"
-            "أو اكتب عنوانًا أو معلمًا أو حيًا (مثال: \"بالقرب من سوق ماثاري\").\n\n"
-            "هل لديك رمز موقع من ثلاث كلمات؟ اكتبه هكذا: filled.count.soap"
+            "<b>موقع الضرر</b>\n\n"
+            "شارك موقعك عبر GPS باستخدام زر المرفقات 📎، أو اكتب عنواناً أو معلماً قريباً.\n\n"
+            "<i>مثال: بالقرب من سوق ويستلاندز، شارع كيبيرا</i>"
         ),
         "fr": (
-            "📍 Où se trouvent les dégâts ?\n\n"
-            "Idéal : appuyez sur 📎 Pièce jointe → Localisation pour partager votre GPS.\n\n"
-            "Ou tapez une adresse, un lieu repère ou un quartier "
-            "(ex. « Près du marché de Mathare »).\n\n"
-            "Vous avez un code à 3 mots ? Tapez-le ainsi : filled.count.soap"
+            "<b>Lieu des dommages</b>\n\n"
+            "Partagez votre position GPS via le bouton 📎 pièce jointe, "
+            "ou saisissez une adresse ou un repère proche.\n\n"
+            "<i>Exemple : Près du marché Westlands, route de Kibera</i>"
         ),
         "zh": (
-            "📍 损坏在哪里？\n\n"
-            "最佳方式：点击 📎 附件按钮 → 位置，分享您的 GPS 位置。\n\n"
-            "或输入街道地址、地标或社区名称（例如：马萨雷市场附近）。\n\n"
-            "有三词定位码？请这样输入：filled.count.soap"
+            "<b>受损位置</b>\n\n"
+            "通过 📎 附件按钮分享您的 GPS 位置，或输入街道地址或附近地标。\n\n"
+            "<i>示例：威斯特兰兹市场附近，基贝拉路</i>"
         ),
         "ru": (
-            "📍 Где находится ущерб?\n\n"
-            "Лучший способ: нажмите 📎 Вложения → Геолокация, чтобы поделиться GPS.\n\n"
-            "Или введите адрес, ориентир или район "
-            "(например: «Рядом с рынком Матаре»).\n\n"
-            "Есть код из трёх слов? Введите его так: filled.count.soap"
+            "<b>Местоположение ущерба</b>\n\n"
+            "Поделитесь GPS-координатами через кнопку 📎 «Вложения», "
+            "или введите адрес или ближайший ориентир.\n\n"
+            "<i>Пример: Рядом с рынком Вестлэндс, дорога Кибера</i>"
         ),
         "es": (
-            "📍 ¿Dónde están los daños?\n\n"
-            "Lo mejor: toque el botón 📎 adjuntar → Ubicación para compartir su GPS.\n\n"
-            "O escriba una dirección, punto de referencia o barrio "
-            "(ej. \"Cerca del Mercado Mathare\").\n\n"
-            "¿Tiene un código de 3 palabras? Escríbalo así: filled.count.soap"
+            "<b>Ubicación del daño</b>\n\n"
+            "Comparta su ubicación GPS usando el botón 📎 adjuntar, "
+            "o escriba una dirección o punto de referencia cercano.\n\n"
+            "<i>Ejemplo: Cerca del Mercado Westlands, Carretera Kibera</i>"
         ),
     },
     "select_damage_level": {
-        "en": "Select the level of damage:",
-        "ar": "حدد مستوى الضرر:",
-        "fr": "Sélectionnez le niveau de dommage :",
-        "zh": "请选择损坏程度：",
-        "ru": "Выберите уровень повреждения:",
-        "es": "Seleccione el nivel de daño:",
+        "en": "<b>Level of damage</b>\n\nHow severely is the structure affected?",
+        "ar": "<b>مستوى الضرر</b>\n\nما مدى تضرر الهيكل؟",
+        "fr": "<b>Niveau de dommage</b>\n\nDans quelle mesure la structure est-elle affectée ?",
+        "zh": "<b>损坏程度</b>\n\n该建筑受损程度如何？",
+        "ru": "<b>Уровень повреждения</b>\n\nНасколько серьёзно повреждён объект?",
+        "es": "<b>Nivel de daño</b>\n\n¿Qué tan gravemente está afectada la estructura?",
     },
     "select_infra_type": {
-        "en": "Select the type of infrastructure (choose all that apply):",
-        "ar": "حدد نوع البنية التحتية (اختر كل ما ينطبق):",
-        "fr": "Sélectionnez le type d'infrastructure (choisissez tout ce qui s'applique) :",
-        "zh": "请选择基础设施类型（可多选）：",
-        "ru": "Выберите тип инфраструктуры (выберите все подходящие):",
-        "es": "Seleccione el tipo de infraestructura (elija todas las que correspondan):",
+        "en": "<b>Infrastructure affected</b>\n\nSelect all types that apply, then tap Confirm.",
+        "ar": "<b>البنية التحتية المتضررة</b>\n\nاختر جميع الأنواع المنطبقة، ثم اضغط تأكيد.",
+        "fr": "<b>Infrastructure affectée</b>\n\nSélectionnez tous les types concernés, puis appuyez sur Confirmer.",
+        "zh": "<b>受影响的基础设施</b>\n\n选择所有适用类型，然后点击确认。",
+        "ru": "<b>Пострадавшая инфраструктура</b>\n\nВыберите все подходящие типы, затем нажмите «Подтвердить».",
+        "es": "<b>Infraestructura afectada</b>\n\nSeleccione todos los tipos que correspondan y toque Confirmar.",
     },
     "select_crisis_nature": {
         "en": "What is the nature of the crisis?",
@@ -122,12 +140,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "No", "ar": "لا", "fr": "Non", "zh": "否", "ru": "Нет", "es": "No",
     },
     "confirm": {
-        "en": "✅ Report submitted! ID: {report_id}\nView on map: {map_url}",
-        "ar": "✅ تم إرسال التقرير! المعرّف: {report_id}\nعرض على الخريطة: {map_url}",
-        "fr": "✅ Rapport soumis ! ID : {report_id}\nVoir sur la carte : {map_url}",
-        "zh": "✅ 报告已提交！编号：{report_id}\n在地图上查看：{map_url}",
-        "ru": "✅ Отчёт отправлен! ID: {report_id}\nПосмотреть на карте: {map_url}",
-        "es": "✅ ¡Informe enviado! ID: {report_id}\nVer en el mapa: {map_url}",
+        "en": "<b>Report submitted</b>\n\nThank you. Your report is now being processed by coordinators.\n\nReference: <code>{report_id}</code>\n<a href=\"{map_url}\">View on map</a>",
+        "ar": "<b>تم إرسال التقرير</b>\n\nشكراً. يتم الآن معالجة تقريرك من قِبل المنسقين.\n\nالمرجع: <code>{report_id}</code>\n<a href=\"{map_url}\">عرض على الخريطة</a>",
+        "fr": "<b>Rapport soumis</b>\n\nMerci. Votre rapport est en cours de traitement par les coordinateurs.\n\nRéférence : <code>{report_id}</code>\n<a href=\"{map_url}\">Voir sur la carte</a>",
+        "zh": "<b>报告已提交</b>\n\n感谢您。您的报告正在由协调人员处理。\n\n参考编号：<code>{report_id}</code>\n<a href=\"{map_url}\">在地图上查看</a>",
+        "ru": "<b>Отчёт отправлен</b>\n\nСпасибо. Ваш отчёт обрабатывается координаторами.\n\nНомер: <code>{report_id}</code>\n<a href=\"{map_url}\">Посмотреть на карте</a>",
+        "es": "<b>Informe enviado</b>\n\nGracias. Su informe está siendo procesado por los coordinadores.\n\nReferencia: <code>{report_id}</code>\n<a href=\"{map_url}\">Ver en el mapa</a>",
     },
     "badge_awarded": {
         "en": "🏅 New badge earned: {badge_name}",
@@ -138,12 +156,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "🏅 ¡Nueva insignia obtenida: {badge_name}!",
     },
     "confirm_no_url": {
-        "en": "✅ Report submitted! ID: {report_id}",
-        "ar": "✅ تم إرسال التقرير! المعرّف: {report_id}",
-        "fr": "✅ Rapport soumis ! ID : {report_id}",
-        "zh": "✅ 报告已提交！编号：{report_id}",
-        "ru": "✅ Отчёт отправлен! ID: {report_id}",
-        "es": "✅ ¡Informe enviado! ID: {report_id}",
+        "en": "<b>Report submitted</b>\n\nThank you. Your report is now being processed by coordinators.\n\nReference: <code>{report_id}</code>",
+        "ar": "<b>تم إرسال التقرير</b>\n\nشكراً. يتم الآن معالجة تقريرك من قِبل المنسقين.\n\nالمرجع: <code>{report_id}</code>",
+        "fr": "<b>Rapport soumis</b>\n\nMerci. Votre rapport est en cours de traitement par les coordinateurs.\n\nRéférence : <code>{report_id}</code>",
+        "zh": "<b>报告已提交</b>\n\n感谢您。您的报告正在由协调人员处理。\n\n参考编号：<code>{report_id}</code>",
+        "ru": "<b>Отчёт отправлен</b>\n\nСпасибо. Ваш отчёт обрабатывается координаторами.\n\nНомер: <code>{report_id}</code>",
+        "es": "<b>Informe enviado</b>\n\nGracias. Su informe está siendo procesado por los coordinadores.\n\nReferencia: <code>{report_id}</code>",
     },
     # Dynamic schema navigation keys (added for schema-driven form)
     "schema_unavailable": {
@@ -287,6 +305,15 @@ STRINGS: dict[str, dict[str, str]] = {
     "crisis_chemical":    {"en": "☣ Chemical",    "ar": "☣ كيميائي","fr": "☣ Chimique",    "zh": "☣ 化学",  "ru": "☣ Химическое",    "es": "☣ Químico"},
     "crisis_conflict":    {"en": "⚔ Conflict",    "ar": "⚔ نزاع",  "fr": "⚔ Conflit",     "zh": "⚔ 冲突",  "ru": "⚔ Конфликт",      "es": "⚔ Conflicto"},
     "crisis_civil_unrest":{"en": "🚨 Civil unrest","ar": "🚨 اضطرابات","fr": "🚨 Troubles civils","zh": "🚨 内乱","ru": "🚨 Гражданские волнения","es": "🚨 Disturbios civiles"},
+    # Privacy / anonymisation notice shown before free-text fields
+    "pii_warning": {
+        "en": "Do not include personal names, phone numbers, or identifying details.",
+        "ar": "لا تُدرج أسماء شخصية أو أرقام هواتف أو بيانات تعريفية.",
+        "fr": "N'incluez pas de noms personnels, numéros de téléphone ou données d'identification.",
+        "zh": "请勿填写个人姓名、电话号码或其他身份信息。",
+        "ru": "Не указывайте личные имена, номера телефонов или идентификационные данные.",
+        "es": "No incluya nombres personales, números de teléfono ni datos de identificación.",
+    },
 }
 
 

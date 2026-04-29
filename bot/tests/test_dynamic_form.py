@@ -97,10 +97,12 @@ def _make_schema(custom_fields=None):
 class TestFetchSchema:
     """Tests for bot/schema.py fetch_schema and fallback_schema."""
 
-    @patch("schema.requests") if os.path.exists(os.path.join(os.path.dirname(__file__), "../schema.py")) else pytest.mark.skip
     def test_fallback_schema_structure(self):
         """fallback_schema returns a valid schema with system_fields only."""
-        from schema import fallback_schema
+        try:
+            from schema import fallback_schema
+        except ImportError:
+            pytest.skip("schema module not importable in test env")
 
         fb = fallback_schema()
         assert "system_fields" in fb
@@ -119,8 +121,6 @@ class TestFetchSchema:
         assert "damage_level" in fb["system_fields"]
         assert "infrastructure_type" in fb["system_fields"]
 
-    @patch("schema.INGEST_API_KEY", "test-key")
-    @patch("schema.API_BASE", "http://localhost:7071/api")
     def test_fetch_schema_uses_fallback_on_http_error(self):
         """fetch_schema falls back gracefully when API is unavailable."""
         try:
@@ -128,7 +128,8 @@ class TestFetchSchema:
         except ImportError:
             pytest.skip("schema module not importable in test env")
 
-        with patch("schema.urllib.request.urlopen", side_effect=Exception("connection refused")):
+        # Patch the urllib urlopen call that schema.py uses internally
+        with patch("urllib.request.urlopen", side_effect=Exception("connection refused")):
             result = fetch_schema("ke-flood-dev")
 
         assert "system_fields" in result
@@ -236,14 +237,15 @@ class TestDynamicKeyboards:
                     data = btn.callback_data.encode("utf-8")
                     assert len(data) <= 64, f"Callback too long: {btn.callback_data!r} ({len(data)} bytes)"
 
-    def test_field_question_includes_total(self):
-        """field_question shows current position out of total."""
+    def test_field_question_returns_label(self):
+        """field_question returns the field's label text."""
         builders = self._get_builders()
         field_question = builders[5]
         schema = _make_schema()
         field = schema["custom_fields"][0]
         text = field_question(field, "en", 0, 3)
-        assert "1" in text or "(1" in text or "/3" in text
+        # The label text should be present (counters were removed by design)
+        assert "crisis" in text.lower() or "type" in text.lower()
 
     def test_field_question_marks_optional(self):
         """field_question marks optional fields."""

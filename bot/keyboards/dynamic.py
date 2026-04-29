@@ -32,20 +32,27 @@ def _label(obj: dict, lang: str) -> str:
 
 
 _DONE: dict[str, str] = {
-    "en": "Done ✓", "fr": "Terminé ✓", "ar": "تم ✓",
-    "ru": "Готово ✓", "es": "Listo ✓", "zh": "完成 ✓",
+    "en": "✓  Confirm", "fr": "✓  Confirmer", "ar": "✓  تأكيد",
+    "ru": "✓  Подтвердить", "es": "✓  Confirmar", "zh": "✓  确认",
 }
 _SKIP: dict[str, str] = {
-    "en": "Skip →", "fr": "Passer →", "ar": "تخطى →",
-    "ru": "Пропустить →", "es": "Omitir →", "zh": "跳过 →",
+    "en": "Skip", "fr": "Passer", "ar": "تخطى",
+    "ru": "Пропустить", "es": "Omitir", "zh": "跳过",
 }
 _YES: dict[str, str] = {
-    "en": "Yes ✅", "fr": "Oui ✅", "ar": "نعم ✅",
-    "ru": "Да ✅", "es": "Sí ✅", "zh": "是 ✅",
+    "en": "✓  Yes", "fr": "✓  Oui", "ar": "✓  نعم",
+    "ru": "✓  Да", "es": "✓  Sí", "zh": "✓  是",
 }
 _NO: dict[str, str] = {
-    "en": "No ❌", "fr": "Non ❌", "ar": "لا ❌",
-    "ru": "Нет ❌", "es": "No ❌", "zh": "否 ❌",
+    "en": "✗  No", "fr": "✗  Non", "ar": "✗  لا",
+    "ru": "✗  Нет", "es": "✗  No", "zh": "✗  否",
+}
+
+# Colour-coded indicators for damage severity levels
+_DAMAGE_DOT: dict[str, str] = {
+    "minimal":  "🟢",
+    "partial":  "🟡",
+    "complete": "🔴",
 }
 
 
@@ -60,7 +67,8 @@ def build_damage_level(schema: dict, lang: str) -> InlineKeyboardMarkup:
     rows = []
     for value, labels in options.items():
         label = _label(labels, lang)
-        rows.append([InlineKeyboardButton(label, callback_data=f"dmg:{value}")])
+        dot = _DAMAGE_DOT.get(value, "")
+        rows.append([InlineKeyboardButton(f"{dot}  {label}" if dot else label, callback_data=f"dmg:{value}")])
     if not rows:
         # Absolute fallback
         rows = [
@@ -81,9 +89,9 @@ def build_infra_type(
     for opt in options:
         value = opt.get("value", "")
         label = _label(opt.get("labels", {}), lang)
-        tick = "✅ " if value in selected else ""
-        rows.append([InlineKeyboardButton(tick + label, callback_data=f"infra:{value}")])
-    done = _DONE.get(lang, "Done ✓")
+        marker = "●  " if value in selected else "○  "
+        rows.append([InlineKeyboardButton(marker + label, callback_data=f"infra:{value}")])
+    done = _DONE.get(lang, "✓  Confirm")
     rows.append([InlineKeyboardButton(done, callback_data="infra:done")])
     return InlineKeyboardMarkup(rows)
 
@@ -123,10 +131,10 @@ def build_multiselect_field(
     for opt in options:
         value = opt.get("value", "")
         label = _label(opt.get("labels", {}), lang)
-        tick = "✅ " if value in selected else ""
-        rows.append([InlineKeyboardButton(tick + label, callback_data=f"fm:{idx}:{value}")])
+        marker = "●  " if value in selected else "○  "
+        rows.append([InlineKeyboardButton(marker + label, callback_data=f"fm:{idx}:{value}")])
 
-    done = _DONE.get(lang, "Done ✓")
+    done = _DONE.get(lang, "✓  Confirm")
     done_row = [InlineKeyboardButton(done, callback_data=f"fd:{idx}")]
     if not field.get("required", True):
         skip = _SKIP.get(lang, "Skip →")
@@ -157,20 +165,16 @@ def build_boolean_field(
 
 
 def field_question(field: dict, lang: str, idx: int, total: int) -> str:
-    """
-    Return the question text for a custom field, with progress indicator.
-    e.g. "(3/7) What is the estimated water level?"
-    """
+    """Return the question text for a custom field."""
     labels = field.get("labels", {})
     question = _label(labels, lang)
-    optional_hint = ""
     if not field.get("required", True):
         optional_hints = {
             "en": " (optional)", "fr": " (optionnel)", "ar": " (اختياري)",
             "ru": " (необязательно)", "es": " (opcional)", "zh": " （可选）",
         }
-        optional_hint = optional_hints.get(lang, " (optional)")
-    return f"({idx + 1}/{total}) {question}{optional_hint}"
+        return question + optional_hints.get(lang, " (optional)")
+    return question
 
 
 def system_field_question(field_key: str, schema: dict, lang: str) -> str:

@@ -18,6 +18,8 @@
       "section_needs": "الاحتياجات الأكثر إلحاحاً",
       "section_description": "تفاصيل إضافية",
       "optional": "(اختياري)",
+      "take_photo": "التقاط صورة",
+      "choose_photo": "رفع ملف",
       "change_photo": "تغيير الصورة",
       "use_gps": "استخدام موقع GPS الخاص بي",
       "getting_gps": "جارٍ تحديد الموقع…",

@@ -155,18 +155,21 @@ def publish_schema(
 def list_schema_history(crisis_event_id: str) -> list[dict]:
     """
     Return lightweight metadata for all schema versions (no field lists).
-    Sorted by version ascending.
+    Sorted by version ascending.  Includes custom_field_count for dashboard display.
     """
     query = (
-        "SELECT c.id, c.crisis_event_id, c.version, c.published_at, c.published_by "
+        "SELECT c.id, c.crisis_event_id, c.version, c.published_at, c.published_by, c.custom_fields "
         "FROM c WHERE c.crisis_event_id = @id ORDER BY c.version ASC"
     )
-    items = _schemas().query_items(
+    items = list(_schemas().query_items(
         query=query,
         parameters=[{"name": "@id", "value": crisis_event_id}],
         partition_key=crisis_event_id,
-    )
-    return list(items)
+    ))
+    for item in items:
+        # Add count for dashboard, then remove the full list
+        item["custom_field_count"] = len(item.pop("custom_fields", []) or [])
+    return items
 
 
 def seed_schema(crisis_event_id: str, schema_body: dict) -> dict | None:

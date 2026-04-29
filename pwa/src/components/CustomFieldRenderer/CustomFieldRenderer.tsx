@@ -26,18 +26,18 @@ function _label(labels: Record<string, string> | undefined, lang: string): strin
   return getLabel(labels, lang);
 }
 
-export function CustomFieldRenderer({ field, value, onChange, lang, index, total }: Props) {
+export function CustomFieldRenderer({ field, value, onChange, lang }: Props) {
   const question = _label(field.labels, lang);
   const isRequired = field.required !== false;
-  const progress = index != null && total != null ? ` (${index}/${total})` : "";
 
   const labelText = (
-    <span className="form-card-label">
-      {question}{progress}
+    <div className="form-card-label">
+      <span className="sec-num" />
+      {question}
       {!isRequired && (
         <span className="field-optional-tag"> — optional</span>
       )}
-    </span>
+    </div>
   );
 
   // ── select ──────────────────────────────────────────────────────────────
@@ -129,7 +129,10 @@ export function CustomFieldRenderer({ field, value, onChange, lang, index, total
               onChange={() => onChange(field.id, true)}
               checked={boolVal && isAnswered}
             />
-            ✅ {yesLabel}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {yesLabel}
           </label>
           <label className={`debris-option no ${!boolVal && isAnswered ? "selected" : ""}`}>
             <input
@@ -138,7 +141,10 @@ export function CustomFieldRenderer({ field, value, onChange, lang, index, total
               onChange={() => onChange(field.id, false)}
               checked={!boolVal && isAnswered}
             />
-            ❌ {noLabel}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            {noLabel}
           </label>
         </div>
       </div>

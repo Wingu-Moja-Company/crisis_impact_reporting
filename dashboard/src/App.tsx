@@ -135,6 +135,7 @@ export default function App() {
               selectedReportId={selectedReport}
               onSelect={handleReportSelect}
               schema={schema}
+              lastFetched={lastFetched}
             />
           )}
         </aside>

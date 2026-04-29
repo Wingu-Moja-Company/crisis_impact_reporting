@@ -18,6 +18,8 @@
       "section_needs": "Necesidades más urgentes",
       "section_description": "Detalles adicionales",
       "optional": "(opcional)",
+      "take_photo": "Tomar foto",
+      "choose_photo": "Subir archivo",
       "change_photo": "Cambiar foto",
       "use_gps": "Usar mi ubicación GPS",
       "getting_gps": "Obteniendo ubicación…",

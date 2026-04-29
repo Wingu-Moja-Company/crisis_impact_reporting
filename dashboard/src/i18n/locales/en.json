@@ -19,6 +19,7 @@
     },
     "feed": {
       "loading": "Loading reports…",
+      "no_reports": "No reports yet for this event.",
       "grade_1": "Grade 1",
       "grade_2": "Grade 2",
       "grade_3": "Grade 3",
