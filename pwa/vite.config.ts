@@ -8,6 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
+        // Activate new service worker immediately without waiting for tabs to close
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
@@ -24,9 +27,12 @@ export default defineConfig({
             options: { cacheName: "building-footprints" },
           },
           {
-            urlPattern: /\/api\//,
+            // Only cache GET API responses — never intercept POST/PUT (report submissions)
+            // so auth headers are always sent directly and never affected by SW caching.
+            urlPattern: ({ request, url }) =>
+              url.pathname.includes("/api/") && request.method === "GET",
             handler: "NetworkFirst",
-            options: { cacheName: "api-cache", networkTimeoutSeconds: 3 },
+            options: { cacheName: "api-cache", networkTimeoutSeconds: 5 },
           },
         ],
       },
