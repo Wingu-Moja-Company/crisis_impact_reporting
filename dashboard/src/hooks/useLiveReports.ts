@@ -53,7 +53,10 @@ function featureToReport(f: GeoJSON.Feature): LiveReport | null {
     infrastructure_name:      (p.infrastructure_name as string) ?? null,
     crisis_nature:            String(p.crisis_nature ?? ""),
     channel:                  String(p.channel ?? ""),
-    description_en:           (p.description_en as string) ?? null,
+    // description_en: from pipeline translation. Fall back to raw description from
+    // responses (flattened into GeoJSON props via **responses in geojson.py) for
+    // reports where the PWA stored description inside the responses blob.
+    description_en:           (p.description_en as string) ?? (p.description as string) ?? null,
     requires_debris_clearing: Boolean(p.requires_debris_clearing),
     ai_vision_confidence:             (p.ai_vision_confidence as number) ?? null,
     ai_vision_suggested_level:        (p.ai_vision_suggested_level as string) ?? null,

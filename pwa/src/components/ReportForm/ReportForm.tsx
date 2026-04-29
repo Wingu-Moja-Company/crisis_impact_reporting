@@ -115,12 +115,17 @@ export function ReportForm({ crisisEventId, onSuccess }: Props) {
     const finalLat = coords?.lat ?? geocodeResult?.lat;
     const finalLon = coords?.lon ?? geocodeResult?.lon;
 
+    // Extract description from responses so the pipeline can translate it and
+    // store it as damage.description_en (it also stays in responses for schema completeness)
+    const descriptionText = typeof responses["description"] === "string" ? responses["description"].trim() : "";
+
     const fields: Record<string, string> = {
       damage_level:         damageLevel!,
       infrastructure_types: JSON.stringify(infraTypes),
       crisis_event_id:      crisisEventId,
       channel:              "pwa",
       responses:            JSON.stringify(responses),
+      ...(descriptionText && { description: descriptionText }),
       ...(schemaVersion != null && { schema_version: String(schemaVersion) }),
       ...(finalLat != null && { gps_lat: String(finalLat), gps_lon: String(finalLon) }),
       ...(locationText && { location_description: locationText }),
