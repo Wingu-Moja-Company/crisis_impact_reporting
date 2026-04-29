@@ -47,10 +47,20 @@ function fmt(iso: string, locale: string): string {
   });
 }
 
-function exportUrl(eventId: string, format: "geojson" | "csv" | "shapefile"): string {
+async function downloadExport(eventId: string, format: "geojson" | "csv" | "shapefile"): Promise<void> {
   const key = import.meta.env.VITE_EXPORT_API_KEY ?? "";
-  const base = `${API_BASE}/v1/reports?crisis_event_id=${encodeURIComponent(eventId)}&format=${format}&limit=5000`;
-  return key ? `${base}&_key=${encodeURIComponent(key)}` : base;
+  const url = `${API_BASE}/v1/reports?crisis_event_id=${encodeURIComponent(eventId)}&format=${format}&limit=5000`;
+  const headers: Record<string, string> = key ? { "X-API-Key": key } : {};
+  const resp = await fetch(url, { headers });
+  if (!resp.ok) throw new Error(`Export failed: ${resp.status}`);
+  const blob = await resp.blob();
+  const ext = format === "geojson" ? "geojson" : format === "csv" ? "csv" : "zip";
+  const filename = `${eventId}-reports.${ext}`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 const PWA_BASE      = (import.meta.env.VITE_PWA_URL ?? "").replace(/\/$/, "");
@@ -964,14 +974,13 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
                     <div className="ec-group">
                       <span className="ec-group-label">Export</span>
                       {(["geojson", "csv", "shapefile"] as const).map((f) => (
-                        <a
+                        <button
                           key={f}
-                          href={exportUrl(ev.id, f)}
                           className="btn btn-sm"
-                          download
+                          onClick={() => downloadExport(ev.id, f)}
                         >
                           {f === "geojson" ? "GeoJSON" : f === "shapefile" ? "Shapefile" : "CSV"}
-                        </a>
+                        </button>
                       ))}
                     </div>
 
