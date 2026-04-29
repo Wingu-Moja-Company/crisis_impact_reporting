@@ -141,127 +141,99 @@ python scripts/notify_partners.py --crisis-id $CRISIS_EVENT_ID
 
 ---
 
-## CI/CD — automatic deployments on push to `main`
+## CI/CD — the only deployment process
 
-The GitHub Actions pipeline (`.github/workflows/deploy-prod.yml`) runs on every push to `main` and deploys all four components in parallel, followed by a smoke test.
+**All deployments go through GitHub Actions. Do not deploy manually.**
 
-| Job | What it deploys | How |
+Push to `main` is the single trigger. GitHub Actions builds every component with the correct secrets injected and runs a smoke test before marking the deployment complete. Manual `az`, `func`, or `swa` commands bypass secrets injection, produce different build artefacts than CI, and have caused production incidents (missing API keys, wrong bundles served). They must not be used.
+
+```
+git add .
+git commit -m "your change"
+git push origin main
+# GitHub Actions takes over — watch progress at:
+# https://github.com/Wingu-Moja-Company/crisis_impact_reporting/actions
+```
+
+### What the pipeline does
+
+| Job | Deploys | Method |
 |---|---|---|
 | `deploy-functions` | `functions/` → `func-crisis-pipeline-ob7ravt3zfbzi` | `azure/functions-action@v1` |
 | `deploy-functions` | `bot/` → `func-crisis-bot-ob7ravt3zfbzi` | `azure/functions-action@v1` |
-| `deploy-pwa` | `pwa/dist` → `swa-crisis-pwa-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
-| `deploy-dashboard` | `dashboard/dist` → `swa-crisis-dashboard-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
-| `smoke-test` | Runs after all three above | `tests/e2e/smoke_test.py` |
+| `deploy-pwa` | `pwa/` built → `swa-crisis-pwa-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
+| `deploy-dashboard` | `dashboard/` built → `swa-crisis-dashboard-ob7ravt3zfbzi` | `Azure/static-web-apps-deploy@v1` |
+| `smoke-test` | Runs after all three above pass | `tests/e2e/smoke_test.py` |
+
+The PWA and dashboard are built by CI from source with all environment variables injected from GitHub secrets. The built artefacts are never committed to the repository.
 
 ### Required GitHub secrets
 
-Set under **Settings → Secrets and variables → Actions**:
+Set under **Settings → Secrets and variables → Actions**. All must be present or the build will produce broken bundles (missing API keys, 401 errors in production).
 
-| Secret | Description |
+| Secret | Value / description |
 |---|---|
 | `AZURE_CREDENTIALS` | Service principal JSON (for `azure/login@v2`) |
 | `API_BASE_URL` | `https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api` |
-| `CRISIS_EVENT_ID` | Active crisis event ID e.g. `ke-flood-dev` |
-| `EXPORT_API_KEY` | API key injected into dashboard for data export |
+| `CRISIS_EVENT_ID` | Active crisis event ID, e.g. `ke-flood-dev` |
+| `INGEST_API_KEY` | Key required by `POST /v1/reports` — baked into PWA bundle and used by smoke test |
+| `EXPORT_API_KEY` | Key for export/admin endpoints — baked into dashboard bundle |
 | `SWA_DEPLOYMENT_TOKEN_PWA` | Deployment token for `swa-crisis-pwa-ob7ravt3zfbzi` |
 | `SWA_DEPLOYMENT_TOKEN_DASHBOARD` | Deployment token for `swa-crisis-dashboard-ob7ravt3zfbzi` |
 
+> **If a secret is missing:** the CI build will succeed (Vite silently treats missing env vars as empty strings) but the deployed app will be broken. Symptoms: PWA submissions return 401, dashboard shows no reports. Always verify secrets are set before investigating runtime errors.
+
+### Checking a deployment
+
+```bash
+# See the latest run and its status
+gh run list --limit 5
+
+# Watch a run live
+gh run watch <run-id>
+
+# View logs for a failed job
+gh run view <run-id> --log-failed
+```
+
+### Environment variables baked into each build
+
+Vite bakes `VITE_*` variables into the JS bundle at build time. The values come entirely from GitHub secrets — `.env.local` files are only for local development and are git-ignored.
+
+| Variable | Used by | Secret |
+|---|---|---|
+| `VITE_API_BASE_URL` | PWA + Dashboard | `API_BASE_URL` |
+| `VITE_CRISIS_EVENT_ID` | PWA + Dashboard | `CRISIS_EVENT_ID` |
+| `VITE_INGEST_API_KEY` | PWA (report submission) | `INGEST_API_KEY` |
+| `VITE_EXPORT_API_KEY` | Dashboard (all read + admin endpoints) | `EXPORT_API_KEY` |
+
 ---
 
-## Manual deployment (without CI/CD)
+## Local development environment files
 
-### Azure Functions
+These files are git-ignored and only used when running `npm run dev` locally. They must never be used to drive a production deployment.
 
-The preferred deploy method is `func azure functionapp publish` which automatically triggers a remote Oryx build (installs `requirements.txt` on Azure):
-
-```bash
-cd functions
-func azure functionapp publish func-crisis-pipeline-ob7ravt3zfbzi --python
+**`pwa/.env.local`**
+```ini
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
+VITE_CRISIS_EVENT_ID=ke-flood-dev
+VITE_INGEST_API_KEY=<value from Azure Function App settings>
 ```
 
-Repeat with `bot/` for the Telegram bot:
-
-```bash
-cd bot
-func azure functionapp publish func-crisis-bot-ob7ravt3zfbzi --python
+**`dashboard/.env.local`**
+```ini
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
+VITE_CRISIS_EVENT_ID=ke-flood-dev
+VITE_EXPORT_API_KEY=<value from Azure Function App settings>
 ```
 
-If you must use `az functionapp deployment source config-zip` instead, **always include `--build-remote true`**:
-
+Retrieve current key values with:
 ```bash
-cd functions
-zip -r /tmp/functions_deploy.zip . -x "*.pyc" -x "__pycache__/*" -x ".git/*" -x "tests/*"
-az functionapp deployment source config-zip \
+az functionapp config appsettings list \
   --name func-crisis-pipeline-ob7ravt3zfbzi \
   --resource-group rg-crisis-platform-dev \
-  --src /tmp/functions_deploy.zip \
-  --build-remote true
-```
-
-> **Warning — missing packages after zip deploy:**  
-> If you deploy a zip *without* `--build-remote true`, Azure copies the source files but does
-> **not** reinstall Python packages. All function endpoints will return HTTP 500 with
-> `ModuleNotFoundError: No module named 'azure.cosmos'`. Recovery steps:
->
-> 1. Redeploy with `--build-remote true` (triggers Oryx to run `pip install -r requirements.txt`).
-> 2. Wait ~2 minutes for the build to complete, then poll until the endpoint returns 200.
->
-> The app setting `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is permanently set on the function app
-> as a safety net, but using `--build-remote true` explicitly is the most reliable approach.
-
-The bot function app needs `INGEST_API_KEY` in its app settings (it is sent as `X-API-Key`
-on every report submission). If deploying a fresh environment, set it once:
-
-```bash
-az functionapp config appsettings set \
-  --name func-crisis-bot-ob7ravt3zfbzi \
-  --resource-group rg-crisis-platform-dev \
-  --settings "INGEST_API_KEY=<value from func-crisis-pipeline app settings>"
-```
-
-### PWA
-
-```bash
-cd pwa
-VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api \
-VITE_CRISIS_EVENT_ID=ke-flood-dev \
-npm run build
-
-# Get deployment token
-SWA_TOKEN=$(az staticwebapp secrets list \
-  --name swa-crisis-pwa-ob7ravt3zfbzi \
-  --resource-group rg-crisis-platform-dev \
-  --query "properties.apiKey" -o tsv)
-
-swa deploy dist --deployment-token $SWA_TOKEN --env production
-```
-
-### Dashboard
-
-The dashboard requires three Vite env vars at build time. The easiest way to manage
-these for manual deploys is `dashboard/.env.local` (git-ignored):
-
-```ini
-# dashboard/.env.local
-VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
-VITE_EXPORT_API_KEY=ITMj89SPRNlx0NkCKcKE6w2DRLcD4wAldCdrGR2k0JU
-VITE_CRISIS_EVENT_ID=ke-flood-dev
-```
-
-> **Important:** `VITE_EXPORT_API_KEY` must be present at build time — it is baked into
-> the JS bundle by Vite. A build without it produces a dashboard that gets 401 from every
-> read endpoint and shows no reports.
-
-```bash
-cd dashboard
-npm run build   # picks up .env.local automatically
-
-SWA_TOKEN=$(az staticwebapp secrets list \
-  --name swa-crisis-dashboard-ob7ravt3zfbzi \
-  --resource-group rg-crisis-platform-dev \
-  --query "properties.apiKey" -o tsv)
-
-swa deploy dist --deployment-token $SWA_TOKEN --env production
+  --query "[?name=='INGEST_API_KEY' || name=='EXPORT_API_KEY'].{name:name,value:value}" \
+  -o table
 ```
 
 ---
