@@ -50,51 +50,48 @@ A real-time crisis damage reporting platform enabling affected communities to su
 
 - Python 3.11+
 - Node.js 20+
-- Azure CLI (`az login`)
-- Azure Functions Core Tools v4: `npm install -g azure-functions-core-tools@4`
-- Azure PostgreSQL (managed, pre-provisioned with PostGIS extension)
+- Azure CLI (`az login`) — for looking up keys and managing resources
+- GitHub CLI (`gh`) — for monitoring deployments
 
-### Quick Start
+### Local development
+
+Each component has a `.env.local` file (git-ignored) for pointing at the live dev API:
+
+**`pwa/.env.local`**
+```ini
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
+VITE_CRISIS_EVENT_ID=ke-flood-dev
+VITE_INGEST_API_KEY=<from Azure Function App settings>
+```
+
+**`dashboard/.env.local`**
+```ini
+VITE_API_BASE_URL=https://func-crisis-pipeline-ob7ravt3zfbzi.azurewebsites.net/api
+VITE_CRISIS_EVENT_ID=ke-flood-dev
+VITE_EXPORT_API_KEY=<from Azure Function App settings>
+VITE_PWA_URL=https://green-grass-00d127b03.7.azurestaticapps.net
+VITE_TELEGRAM_BOT_USERNAME=crisis_reporting_bot
+```
 
 ```bash
-# 1. Clone and enter repo
-git clone <repo-url>
-cd crisis_impact_reporting
-
-# 2. Python environment
-python -m venv .venv
-source .venv/bin/activate
+# Install dependencies
 pip install -r bot/requirements.txt
 pip install -r functions/requirements.txt
-
-# 3. Node environments
 cd pwa && npm install && cd ..
 cd dashboard && npm install && cd ..
 
-# 4. Configure environment
-cp .env.example .env
-# Edit .env with dev credentials
-
-# 5. Create local crisis event
-python scripts/create_crisis_event.py \
-  --id ke-flood-dev \
-  --name "Dev — Kenya Flood Test" \
-  --country KE --region nairobi --crisis-nature flood \
-  --schema-file schemas/flood-schema.json
-
-# 6. Start services (four terminals)
+# Start services (four terminals)
 cd pwa       && npm run dev   # http://localhost:3000
 cd dashboard && npm run dev   # http://localhost:3001
 cd functions && func start    # http://localhost:7071
 python bot/main.py --poll     # Telegram bot in polling mode
 ```
 
-### Running Tests
+### Running tests
 
 ```bash
-pytest tests/ -v
-cd pwa && npm test
-cd dashboard && npm test
+cd functions && pytest tests/ -v
+cd bot       && pytest tests/ -v
 python tests/e2e/smoke_test.py --env local --crisis-id ke-flood-dev
 ```
 
@@ -123,21 +120,15 @@ All submissions are linked to a Microsoft Global Building Footprint polygon (`bu
 
 ## Deployment
 
-See [docs/deployment.md](docs/deployment.md) for the full runbook. Summary:
+**All deployments are handled automatically by GitHub Actions on every push to `main`.** There are no manual deployment steps for the PWA, dashboard, bot, or API functions.
 
 ```bash
-# Deploy Azure infrastructure (Bicep)
-az deployment group create \
-  --resource-group rg-crisis-platform-prod \
-  --template-file infrastructure/main.bicep \
-  --parameters crisisEventId=ke-flood-2026-04 country=KE
-
-# Create crisis event in Cosmos DB
-python scripts/create_crisis_event.py \
-  --id ke-flood-2026-04 --name "Kenya Nairobi Floods — April 2026" \
-  --country KE --region nairobi --crisis-nature flood \
-  --schema-file schemas/flood-schema.json
+git push origin main
+# CI builds all components, injects secrets, deploys to Azure, runs smoke tests
+# Monitor at: https://github.com/Wingu-Moja-Company/crisis_impact_reporting/actions
 ```
+
+See [docs/deployment.md](docs/deployment.md) for the full runbook including required GitHub secrets, new crisis event setup, and infrastructure provisioning.
 
 ---
 

@@ -53,16 +53,19 @@
 
 ## Prerequisites
 
-- Azure CLI authenticated: `az login`
-- SWA CLI installed: `npm install -g @azure/static-web-apps-cli`
-- Azure Functions Core Tools v4: `npm install -g azure-functions-core-tools@4`
+- Azure CLI authenticated: `az login` — for infrastructure provisioning and secret lookups
+- GitHub CLI: `gh auth login` — for monitoring CI/CD runs
 - Access to `rg-crisis-platform-dev` (dev) or `rg-crisis-platform-prod` (prod)
 - GitHub repository secrets configured (see CI/CD section below)
 - Building footprints pre-loaded for the crisis region
 
+> **Note:** Azure Functions Core Tools and the SWA CLI are not needed for deployments. All application code is deployed by GitHub Actions. The Azure CLI is only needed for initial infrastructure setup.
+
 ---
 
 ## Hour 0–2: Deploy infrastructure
+
+Infrastructure is provisioned once via Bicep. Application code is deployed automatically by CI after this step.
 
 ```bash
 export CRISIS_EVENT_ID="ke-flood-2026-04"
@@ -70,14 +73,14 @@ export CRISIS_COUNTRY="KE"
 export CRISIS_REGION="nairobi"
 export CRISIS_NATURE="flood"
 
-# Deploy all Azure services via Bicep
+# 1. Provision all Azure resources (Cosmos DB, Functions, Static Web Apps, Key Vault, etc.)
 az deployment group create \
   --resource-group rg-crisis-platform-prod \
   --template-file infrastructure/main.bicep \
   --parameters infrastructure/parameters/prod.parameters.json \
   --parameters crisisEventId=$CRISIS_EVENT_ID country=$CRISIS_COUNTRY
 
-# Create crisis event and load form schema in Cosmos DB
+# 2. Create the crisis event record in Cosmos DB
 python scripts/create_crisis_event.py \
   --id $CRISIS_EVENT_ID \
   --name "Kenya Nairobi Floods — April 2026" \
@@ -86,7 +89,7 @@ python scripts/create_crisis_event.py \
   --crisis-nature $CRISIS_NATURE \
   --schema-file schemas/flood-schema.json
 
-# Verify building footprints are loaded
+# 3. Verify building footprints are loaded for the region
 python scripts/verify_footprints.py --region $CRISIS_REGION --country $CRISIS_COUNTRY
 ```
 
@@ -103,6 +106,12 @@ python scripts/simplify_footprints.py \
   --output data/footprints/${CRISIS_COUNTRY,,}-${CRISIS_REGION}-simplified.geojson
 ```
 
+# 4. Push to main — CI deploys all application code automatically
+```bash
+git push origin main
+gh run watch   # monitor deployment progress
+```
+
 ---
 
 ## Hour 2–6: Configure and test
@@ -111,24 +120,23 @@ python scripts/simplify_footprints.py \
 # Register Telegram bot webhook
 python scripts/register_telegram_webhook.py --env prod
 
-# Run smoke tests
+# Run smoke tests (also run automatically by CI after each deploy)
 python tests/e2e/smoke_test.py --env prod --crisis-id $CRISIS_EVENT_ID
-
-# Manual checklist:
-# [ ] PWA loads and is installable as a PWA
-# [ ] Language toggle works for all 6 UN languages — test Arabic RTL
-# [ ] Building footprints visible on map for crisis region
-# [ ] Submit test report via Telegram bot — appears on dashboard within 5 seconds
-# [ ] Submit test report via PWA — appears on dashboard within 5 seconds
-# [ ] Test PWA offline: disable network, fill form, re-enable — report syncs
-# [ ] Export CSV and GeoJSON from dashboard — files download correctly
-# [ ] CAP feed returns valid XML at /v1/feeds/cap/$CRISIS_EVENT_ID.xml
-# [ ] Dashboard coverage heatmap shows data
-# [ ] Click a report in the feed — map popup is fully visible (not clipped at top)
-# [ ] Click a marker directly on the map — popup also offsets correctly, card fully visible
-# [ ] Leave dashboard open for 30 s (one poll cycle) — map position holds, photo does not flash
-# [ ] Submit via Telegram bot — report appears on dashboard (bot must have INGEST_API_KEY set)
 ```
+
+Manual checklist:
+
+- [ ] PWA loads and is installable as a PWA
+- [ ] Language toggle works for all 6 UN languages — test Arabic RTL
+- [ ] Building footprints visible on map for crisis region
+- [ ] Submit test report via Telegram bot — appears on dashboard within 5 seconds
+- [ ] Submit test report via PWA — appears on dashboard within 5 seconds
+- [ ] Test PWA offline: disable network, fill form, re-enable — report syncs
+- [ ] Export CSV and GeoJSON from dashboard — files download correctly
+- [ ] CAP feed returns valid XML at `/v1/feeds/cap/$CRISIS_EVENT_ID.xml`
+- [ ] Dashboard map popup shows photo, AI assessment, and submitter description
+- [ ] Click a report in the feed — map flies to it and popup opens correctly
+- [ ] Leave dashboard open for 30 s — map position holds, photos do not flash
 
 ---
 
