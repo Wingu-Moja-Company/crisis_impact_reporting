@@ -125,3 +125,4 @@ jobs:
         env:
           API_BASE_URL:    ${{ secrets.API_BASE_URL }}
           EXPORT_API_KEY:  ${{ secrets.EXPORT_API_KEY }}
+          INGEST_API_KEY:  ${{ secrets.INGEST_API_KEY }}
