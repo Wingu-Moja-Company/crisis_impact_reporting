@@ -178,6 +178,8 @@ Set under **Settings → Secrets and variables → Actions**. All must be presen
 | `CRISIS_EVENT_ID` | Active crisis event ID, e.g. `ke-flood-dev` |
 | `INGEST_API_KEY` | Key required by `POST /v1/reports` — baked into PWA bundle and used by smoke test |
 | `EXPORT_API_KEY` | Key for export/admin endpoints — baked into dashboard bundle |
+| `VITE_PWA_URL` | Public URL of the PWA (`https://green-grass-00d127b03.7.azurestaticapps.net`) — used for share link buttons in admin panel |
+| `VITE_TELEGRAM_BOT_USERNAME` | Telegram bot username (`crisis_reporting_bot`) — used for bot deep-link buttons in admin panel |
 | `SWA_DEPLOYMENT_TOKEN_PWA` | Deployment token for `swa-crisis-pwa-ob7ravt3zfbzi` |
 | `SWA_DEPLOYMENT_TOKEN_DASHBOARD` | Deployment token for `swa-crisis-dashboard-ob7ravt3zfbzi` |
 
@@ -206,6 +208,8 @@ Vite bakes `VITE_*` variables into the JS bundle at build time. The values come 
 | `VITE_CRISIS_EVENT_ID` | PWA + Dashboard | `CRISIS_EVENT_ID` |
 | `VITE_INGEST_API_KEY` | PWA (report submission) | `INGEST_API_KEY` |
 | `VITE_EXPORT_API_KEY` | Dashboard (all read + admin endpoints) | `EXPORT_API_KEY` |
+| `VITE_PWA_URL` | Dashboard (admin panel share buttons) | `VITE_PWA_URL` |
+| `VITE_TELEGRAM_BOT_USERNAME` | Dashboard (admin panel bot deep-link buttons) | `VITE_TELEGRAM_BOT_USERNAME` |
 
 ---
 

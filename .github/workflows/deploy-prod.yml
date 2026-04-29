@@ -92,10 +92,12 @@ jobs:
       - run: npm run build
         working-directory: dashboard
         env:
-          VITE_API_BASE_URL:           ${{ secrets.API_BASE_URL }}
-          VITE_CRISIS_EVENT_ID:        ${{ secrets.CRISIS_EVENT_ID }}
-          VITE_EXPORT_API_KEY:         ${{ secrets.EXPORT_API_KEY }}
-          VITE_ADMIN_KEY_REQUIRED:     "true"
+          VITE_API_BASE_URL:             ${{ secrets.API_BASE_URL }}
+          VITE_CRISIS_EVENT_ID:         ${{ secrets.CRISIS_EVENT_ID }}
+          VITE_EXPORT_API_KEY:          ${{ secrets.EXPORT_API_KEY }}
+          VITE_ADMIN_KEY_REQUIRED:      "true"
+          VITE_PWA_URL:                 ${{ secrets.VITE_PWA_URL }}
+          VITE_TELEGRAM_BOT_USERNAME:   ${{ secrets.VITE_TELEGRAM_BOT_USERNAME }}
 
       - name: Deploy Dashboard
         uses: Azure/static-web-apps-deploy@v1

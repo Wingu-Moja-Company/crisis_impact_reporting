@@ -868,7 +868,6 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
 
         {/* ── Event list ──────────────────────────────────────────────────── */}
         <div className="ap-list">
-          {loading && <div className="ap-loading">{t("admin.loading")}</div>}
           {!loading && events.length === 0 && (
             <div className="ap-empty">{t("admin.empty")}</div>
           )}
@@ -1056,7 +1055,10 @@ export function AdminPanel({ onClose, onSwitchCrisis, activeCrisisId }: Props) {
             {t("admin.refresh")}
           </button>
           <span className="ap-footer-meta">
-            {events.length} event{events.length !== 1 ? "s" : ""}
+            {loading
+              ? <span className="ap-footer-loading">Loading…</span>
+              : <>{events.length} event{events.length !== 1 ? "s" : ""}</>
+            }
           </span>
         </div>
       </div>

@@ -492,6 +492,11 @@
   margin-left: 8px;
 }
 
+.ap-footer-loading {
+  font-style: italic;
+  opacity: 0.7;
+}
+
 /* ── Auth card ────────────────────────────────────────────────────────────── */
 .ap-auth-card {
   background: #fff;
