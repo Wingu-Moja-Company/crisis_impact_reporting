@@ -14,15 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install pipeline dependencies
-        run: pip install -r functions/requirements.txt --target functions/.python_packages/lib/site-packages
-
-      - name: Install bot dependencies
-        run: pip install -r bot/requirements.txt --target bot/.python_packages/lib/site-packages
+      - name: Install Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Azure login
         uses: azure/login@v2
@@ -30,18 +23,12 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy pipeline function app
-        uses: azure/functions-action@v1
-        with:
-          app-name:    func-crisis-pipeline-ox2ocy4v77ldm
-          package:     functions
-          scm-do-build-during-deployment: false
+        working-directory: functions
+        run: func azure functionapp publish func-crisis-pipeline-ox2ocy4v77ldm --python
 
       - name: Deploy bot function app
-        uses: azure/functions-action@v1
-        with:
-          app-name:    func-crisis-bot-ox2ocy4v77ldm
-          package:     bot
-          scm-do-build-during-deployment: false
+        working-directory: bot
+        run: func azure functionapp publish func-crisis-bot-ox2ocy4v77ldm --python
 
   deploy-pwa:
     name: Deploy PWA to Azure Static Web Apps
