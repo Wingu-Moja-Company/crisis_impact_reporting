@@ -22,6 +22,17 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Clear WEBSITE_RUN_FROM_PACKAGE (conflicts with func publish)
+        run: |
+          az functionapp config appsettings delete \
+            --name func-crisis-pipeline-ox2ocy4v77ldm \
+            --resource-group rg-crisis-platform-dev \
+            --setting-names WEBSITE_RUN_FROM_PACKAGE SCM_RUN_FROM_PACKAGE --output none || true
+          az functionapp config appsettings delete \
+            --name func-crisis-bot-ox2ocy4v77ldm \
+            --resource-group rg-crisis-platform-dev \
+            --setting-names WEBSITE_RUN_FROM_PACKAGE SCM_RUN_FROM_PACKAGE --output none || true
+
       - name: Deploy pipeline function app
         working-directory: functions
         run: func azure functionapp publish func-crisis-pipeline-ox2ocy4v77ldm --python
