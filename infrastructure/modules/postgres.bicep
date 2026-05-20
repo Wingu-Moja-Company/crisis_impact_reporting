@@ -9,7 +9,7 @@ param adminPassword string
 @allowed(['Standard_B1ms', 'Standard_D2s_v3'])
 param skuName string = 'Standard_D2s_v3'
 
-var serverName = 'pg-crisis-footprints-${uniqueString(resourceGroup().id)}'
+var serverName = 'pg-crisis-fp-${uniqueString(resourceGroup().id)}'
 
 resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
   name: serverName
@@ -23,7 +23,7 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-pr
     administratorLoginPassword: adminPassword
     version: '16'
     storage: { storageSizeGB: 32 }
-    backup: { backupRetentionDays: 7, geoRedundantBackup: 'Enabled' }
+    backup: { backupRetentionDays: 7, geoRedundantBackup: skuName == 'Standard_B1ms' ? 'Disabled' : 'Enabled' }
     highAvailability: { mode: 'Disabled' }
   }
 }
