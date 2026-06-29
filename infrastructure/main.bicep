@@ -58,16 +58,6 @@ module cognitive 'modules/cognitive.bicep' = {
   }
 }
 
-// ----- Azure OpenAI -----
-module aoai 'modules/aoai.bicep' = {
-  name: 'aoai'
-  params: {
-    location: location
-    modelName: 'gpt-4o-mini'
-    deploymentName: 'gpt-4o-mini'
-  }
-}
-
 // ----- Key Vault (before Functions — Functions reference vault URI) -----
 module keyvault 'modules/keyvault.bicep' = {
   name: 'keyvault'
@@ -100,5 +90,3 @@ output visionEndpoint          string = cognitive.outputs.visionEndpoint
 output keyVaultUri             string = keyvault.outputs.keyVaultUri
 output botFunctionAppName      string = functions.outputs.botFunctionAppName
 output pipelineFunctionAppName string = functions.outputs.pipelineFunctionAppName
-output aoaiEndpoint            string = aoai.outputs.aoaiEndpoint
-output aoaiDeploymentName      string = aoai.outputs.deploymentName

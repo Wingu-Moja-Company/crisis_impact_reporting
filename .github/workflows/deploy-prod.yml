@@ -25,21 +25,21 @@ jobs:
       - name: Clear WEBSITE_RUN_FROM_PACKAGE (conflicts with func publish)
         run: |
           az functionapp config appsettings delete \
-            --name func-crisis-pipeline-ox2ocy4v77ldm \
+            --name func-crisis-pipeline-f2cuduc3mkkuc \
             --resource-group rg-crisis-platform-dev \
             --setting-names WEBSITE_RUN_FROM_PACKAGE SCM_RUN_FROM_PACKAGE --output none || true
           az functionapp config appsettings delete \
-            --name func-crisis-bot-ox2ocy4v77ldm \
+            --name func-crisis-bot-f2cuduc3mkkuc \
             --resource-group rg-crisis-platform-dev \
             --setting-names WEBSITE_RUN_FROM_PACKAGE SCM_RUN_FROM_PACKAGE --output none || true
 
       - name: Deploy pipeline function app
         working-directory: functions
-        run: func azure functionapp publish func-crisis-pipeline-ox2ocy4v77ldm --python
+        run: func azure functionapp publish func-crisis-pipeline-f2cuduc3mkkuc --python
 
       - name: Deploy bot function app
         working-directory: bot
-        run: func azure functionapp publish func-crisis-bot-ox2ocy4v77ldm --python
+        run: func azure functionapp publish func-crisis-bot-f2cuduc3mkkuc --python
 
   deploy-pwa:
     name: Deploy PWA to Azure Static Web Apps

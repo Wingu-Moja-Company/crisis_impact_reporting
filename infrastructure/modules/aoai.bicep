@@ -4,11 +4,11 @@ param location string
 @description('SKU — S0 is the only available tier for Azure OpenAI')
 param sku string = 'S0'
 
-@description('Model to deploy — e.g. gpt-5.4-mini')
-param modelName string = 'gpt-5.4-mini'
+@description('Model to deploy — e.g. gpt-4.1-mini')
+param modelName string = 'gpt-4.1-mini'
 
 @description('Deployment name used by the application')
-param deploymentName string = 'gpt-5.4-mini'
+param deploymentName string = 'gpt-4.1-mini'
 
 var accountName = 'aoai-crisis-${uniqueString(resourceGroup().id)}'
 
@@ -23,12 +23,12 @@ resource aoaiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
 resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
   parent: aoaiAccount
   name: deploymentName
-  sku: { name: 'GlobalStandard', capacity: 10 }
+  sku: { name: 'Standard', capacity: 10 }
   properties: {
     model: {
       format: 'OpenAI'
       name: modelName
-      version: '2026-03-17'
+      version: '2025-04-14'
     }
   }
 }
