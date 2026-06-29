@@ -36,6 +36,7 @@ var containers = [
   { name: 'contributors',          partitionKey: '/submitter_hash'  }
   { name: 'crisis_events',         partitionKey: '/id'              }
   { name: 'partner_subscriptions', partitionKey: '/partner_id'      }
+  { name: 'schemas',               partitionKey: '/crisis_event_id' }
 ]
 
 resource cosmosContainers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = [for c in containers: {
